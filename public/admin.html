@@ -3,48 +3,205 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🔧 Admin - March Madness Bracket Challenge</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Admin - March Madness</title>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}:root{--bg-primary:#fff;--bg-secondary:#f5f5f4;--bg-tertiary:#e7e5e4;--text-primary:#1c1917;--text-secondary:#57534e;--border-tertiary:rgba(0,0,0,0.15);--border-secondary:rgba(0,0,0,0.3);--accent:#BA7517;--success-bg:#dcfce7;--success-text:#166534;--success-border:#86efac;--danger-bg:#fee2e2;--danger-text:#991b1b;--danger-border:#fca5a5;--info-bg:#dbeafe;--info-text:#1e40af}@media(prefers-color-scheme:dark){:root{--bg-primary:#1c1917;--bg-secondary:#292524;--bg-tertiary:#44403c;--text-primary:#fafaf9;--text-secondary:#a8a29e;--border-tertiary:rgba(255,255,255,0.15);--border-secondary:rgba(255,255,255,0.3);--success-bg:#14532d;--success-text:#86efac;--success-border:#166534;--danger-bg:#450a0a;--danger-text:#fca5a5;--danger-border:#991b1b;--info-bg:#1e3a5f;--info-text:#93c5fd}}body{font-family:'Inter',sans-serif;background:var(--bg-secondary);color:var(--text-primary);min-height:100vh;padding:20px}#app{max-width:1200px;margin:0 auto}input[type="text"]{padding:8px 12px;border:1px solid var(--border-tertiary);border-radius:8px;background:var(--bg-primary);color:var(--text-primary);font-size:14px}input:focus{outline:none;border-color:var(--accent)}button{cursor:pointer;font-family:inherit}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,sans-serif;background:#1c1917;color:#fafaf9;padding:20px}
+    #app{max-width:1000px;margin:0 auto}
+    h1{font-size:24px;margin-bottom:20px;text-align:center}
+    .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;justify-content:center}
+    .tab{padding:10px 20px;border:1px solid #444;border-radius:8px;background:#292524;cursor:pointer;color:#fafaf9}
+    .tab.active{background:#BA7517;border-color:#BA7517}
+    .card{background:#292524;border:1px solid #444;border-radius:12px;padding:20px;margin-bottom:16px}
+    input[type=text]{width:100%;padding:10px;border:1px solid #444;border-radius:8px;background:#1c1917;color:#fafaf9;margin-bottom:10px}
+    button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px}
+    .btn-primary{background:#BA7517;color:#fff}
+    .btn-danger{background:#991b1b;color:#fff;padding:6px 12px;font-size:12px}
+    .player-row{display:flex;justify-content:space-between;align-items:center;padding:12px;background:#1c1917;border-radius:8px;margin-bottom:8px}
+    .team-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .seed{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#E6F1FB;color:#0C447C}
+    .team-input{flex:1;padding:8px;border:1px solid #444;border-radius:6px;background:#1c1917;color:#fafaf9}
+    .wins-btn{width:28px;height:28px;border:1px solid #444;border-radius:6px;background:#292524;color:#fafaf9;cursor:pointer;font-size:16px}
+    .region{margin-bottom:24px}
+    .region-title{font-size:18px;font-weight:600;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #BA7517}
+    .hidden{display:none}
   </style>
 </head>
 <body>
-  <div id="app"></div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <div id="app">
+    <h1>🔧 Commissioner Panel</h1>
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('bracket')">📝 Edit Bracket</button>
+      <button class="tab" onclick="showTab('players')">👥 Players</button>
+      <button class="tab" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
+    </div>
+    <div id="bracket-tab"></div>
+    <div id="players-tab" class="hidden"></div>
+    <div id="leaderboard-tab" class="hidden"></div>
+  </div>
+
   <script>
-const{useState,useEffect}=React,ROUND_POINTS={1:1,2:2,3:8,4:16,5:32,6:32},SEED_MULTIPLIER=s=>s<=4?1:s<=8?1.5:s<=12?2:3,REGIONS=["East","West","South","Midwest"];
+    var data = { players: [], bracket: {}, lastUpdate: null };
+    var REGIONS = ['East', 'West', 'South', 'Midwest'];
+    var ROUND_POINTS = {1:1, 2:2, 3:8, 4:16, 5:32, 6:32};
 
-function App(){
-  const[view,setView]=useState("bracket"),[players,setPlayers]=useState([]),[bracket,setBracket]=useState({}),[lastUpdate,setLastUpdate]=useState(null),[autoUpdate,setAutoUpdate]=useState(!0),[loading,setLoading]=useState(!0),[newPlayer,setNewPlayer]=useState(""),[editingTeams,setEditingTeams]=useState(null),[teamInput,setTeamInput]=useState(""),[liveGames,setLiveGames]=useState([]),[updateStatus,setUpdateStatus]=useState("");
+    function seedMultiplier(seed) {
+      if (seed <= 4) return 1;
+      if (seed <= 8) return 1.5;
+      if (seed <= 12) return 2;
+      return 3;
+    }
 
-  const fetchData=async()=>{try{const r=await fetch("/api/data"),d=await r.json();setPlayers(d.players||[]);setBracket(d.bracket||{});setLastUpdate(d.lastUpdate);setAutoUpdate(d.autoUpdate!==!1);setLoading(!1)}catch(e){}};
-  const fetchLiveGames=async()=>{try{const r=await fetch("/api/live-scores"),d=await r.json();setLiveGames(d.games||[])}catch(e){}};
-  const saveData=async()=>{try{const r=await fetch("/api/data",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({players,bracket,autoUpdate})});const d=await r.json();setLastUpdate(d.lastUpdate);setUpdateStatus("✓ Saved!");setTimeout(()=>setUpdateStatus(""),2000)}catch(e){setUpdateStatus("✗ Failed")}};
-  const triggerScoreUpdate=async()=>{setUpdateStatus("Updating...");try{const r=await fetch("/api/update-scores",{method:"POST"}),d=await r.json();if(d.updated){setUpdateStatus("✓ Updated "+d.count+" teams!");fetchData()}else setUpdateStatus("No new updates");setTimeout(()=>setUpdateStatus(""),3000)}catch(e){setUpdateStatus("✗ Failed")}};
+    function calculateScore(player) {
+      var total = 0;
+      if (!player.teams) return 0;
+      player.teams.forEach(function(tn) {
+        REGIONS.forEach(function(region) {
+          if (!data.bracket[region]) return;
+          var team = data.bracket[region].find(function(t) { return t.name.toLowerCase() === tn.toLowerCase(); });
+          if (team) {
+            for (var i = 1; i <= team.wins; i++) {
+              total += (ROUND_POINTS[i] || 0) * seedMultiplier(team.seed);
+            }
+          }
+        });
+      });
+      return Math.round(total * 10) / 10;
+    }
 
-  useEffect(()=>{fetchData();fetchLiveGames();const i=setInterval(fetchLiveGames,30000);return()=>clearInterval(i)},[]);
-  useEffect(()=>{if(!loading)saveData()},[players,bracket,autoUpdate]);
+    function fetchData() {
+      fetch('/api/data')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          data = d;
+          renderBracket();
+          renderPlayers();
+          renderLeaderboard();
+        });
+    }
 
-  const calculateScore=p=>{let t=0;if(!p.teams)return 0;p.teams.forEach(tn=>{Object.values(bracket).forEach(r=>{if(!r)return;const team=r.find(x=>x.name.toLowerCase()===tn.toLowerCase());if(team)for(let i=1;i<=team.wins;i++)t+=(ROUND_POINTS[i]||0)*SEED_MULTIPLIER(team.seed)})});return Math.round(t*10)/10};
-  const addPlayer=()=>{if(newPlayer.trim()&&!players.find(p=>p.name===newPlayer.trim())){setPlayers([...players,{name:newPlayer.trim(),teams:[]}]);setNewPlayer("")}};
-  const removePlayer=name=>setPlayers(players.filter(p=>p.name!==name));
-  const saveTeams=()=>{if(editingTeams!==null){const teams=teamInput.split(",").map(t=>t.trim()).filter(t=>t);setPlayers(players.map((p,i)=>i===editingTeams?{...p,teams}:p));setEditingTeams(null);setTeamInput("")}};
-  const updateTeamStatus=(region,seed,field,value)=>setBracket(prev=>({...prev,[region]:prev[region].map(t=>t.seed===seed?{...t,[field]:value}:t)}));
-  const updateTeamName=(region,seed,name)=>setBracket(prev=>({...prev,[region]:prev[region].map(t=>t.seed===seed?{...t,name}:t)}));
+    function saveData() {
+      fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
 
-  const sortedPlayers=[...players].sort((a,b)=>calculateScore(b)-calculateScore(a));
-  const activeGames=liveGames.filter(g=>!g.completed&&g.status!=="Scheduled");
+    function showTab(tab) {
+      document.querySelectorAll('.tab').forEach(function(t, i) {
+        t.classList.toggle('active', (tab === 'bracket' && i === 0) || (tab === 'players' && i === 1) || (tab === 'leaderboard' && i === 2));
+      });
+      document.getElementById('bracket-tab').classList.toggle('hidden', tab !== 'bracket');
+      document.getElementById('players-tab').classList.toggle('hidden', tab !== 'players');
+      document.getElementById('leaderboard-tab').classList.toggle('hidden', tab !== 'leaderboard');
+    }
 
-  const styles={header:{marginBottom:"24px"},titleRow:{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"12px"},title:{fontSize:"24px",fontWeight:700,margin:0},adminBadge:{padding:"4px 12px",background:"var(--danger-bg)",color:"var(--danger-text)",borderRadius:"20px",fontSize:"12px",fontWeight:600},subtitle:{fontSize:"14px",color:"var(--text-secondary)",marginTop:"8px"},statusBadge:{display:"inline-block",padding:"4px 10px",background:"var(--success-bg)",color:"var(--success-text)",borderRadius:"20px",fontSize:"12px",marginLeft:"8px"},tabs:{display:"flex",gap:"8px",marginBottom:"24px",flexWrap:"wrap"},tab:a=>({padding:"10px 20px",border:"1px solid "+(a?"var(--accent)":"var(--border-tertiary)"),borderRadius:"8px",background:a?"var(--accent)":"var(--bg-primary)",cursor:"pointer",fontSize:"14px",fontWeight:a?600:400,color:a?"#fff":"var(--text-primary)"}),card:{background:"var(--bg-primary)",border:"1px solid var(--border-tertiary)",borderRadius:"12px",padding:"20px",marginBottom:"16px"},inputRow:{display:"flex",gap:"12px",marginBottom:"16px",flexWrap:"wrap"},input:{flex:1,minWidth:"180px"},btn:{padding:"10px 20px",border:"1px solid var(--border-secondary)",borderRadius:"8px",background:"var(--bg-primary)",cursor:"pointer",fontSize:"14px",fontWeight:500,color:"var(--text-primary)"},btnPrimary:{padding:"10px 20px",border:"none",borderRadius:"8px",background:"var(--accent)",cursor:"pointer",fontSize:"14px",fontWeight:600,color:"#fff"},btnDanger:{padding:"6px 12px",border:"1px solid var(--danger-border)",borderRadius:"6px",background:"var(--danger-bg)",color:"var(--danger-text)",cursor:"pointer",fontSize:"12px",fontWeight:500},btnSuccess:{padding:"10px 20px",border:"none",borderRadius:"8px",background:"#166534",cursor:"pointer",fontSize:"14px",fontWeight:600,color:"#fff"},leaderRow:r=>({display:"flex",alignItems:"center",gap:"16px",padding:"16px",borderRadius:"10px",background:r===0?"#FAEEDA":r===1?"var(--bg-secondary)":r===2?"#FAECE7":"transparent",marginBottom:"8px",border:r<3?"1px solid var(--border-tertiary)":"none"}),rank:{fontSize:"20px",fontWeight:600,width:"40px",textAlign:"center"},playerInfo:{flex:1},playerName:{fontWeight:600,fontSize:"16px",margin:0},teams:{fontSize:"13px",color:"var(--text-secondary)",marginTop:"4px"},score:{fontSize:"24px",fontWeight:700,color:"var(--accent)"},regionGrid:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:"16px"},regionCard:{background:"var(--bg-primary)",border:"1px solid var(--border-tertiary)",borderRadius:"12px",padding:"16px"},regionTitle:{fontSize:"18px",fontWeight:600,marginBottom:"16px",borderBottom:"2px solid var(--accent)",paddingBottom:"8px"},teamRow:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"10px",fontSize:"14px"},seedBadge:s=>({width:"28px",height:"28px",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:600,flexShrink:0,background:s<=4?"#E6F1FB":s<=8?"#EAF3DE":s<=12?"#FAEEDA":"#FAECE7",color:s<=4?"#0C447C":s<=8?"#3B6D11":s<=12?"#854F0B":"#993C1D"}),teamInput:{flex:1,padding:"6px 10px",fontSize:"14px",border:"1px solid var(--border-tertiary)",borderRadius:"6px",background:"var(--bg-primary)",color:"var(--text-primary)"},winsControl:{display:"flex",alignItems:"center",gap:"4px"},winsBtn:{width:"24px",height:"24px",display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid var(--border-secondary)",borderRadius:"6px",background:"var(--bg-primary)",cursor:"pointer",fontSize:"14px",fontWeight:600,color:"var(--text-primary)"},winsDisplay:{width:"24px",textAlign:"center",fontSize:"14px",fontWeight:600},elimToggle:e=>({padding:"4px 8px",fontSize:"11px",fontWeight:500,border:"1px solid",borderRadius:"6px",cursor:"pointer",background:e?"var(--danger-bg)":"var(--success-bg)",borderColor:e?"var(--danger-border)":"var(--success-border)",color:e?"var(--danger-text)":"var(--success-text)"}),settingRow:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px",background:"var(--bg-secondary)",borderRadius:"8px",marginBottom:"12px"},toggle:on=>({width:"50px",height:"28px",borderRadius:"14px",background:on?"#166534":"var(--bg-tertiary)",border:"none",cursor:"pointer",position:"relative"}),toggleKnob:on=>({width:"22px",height:"22px",borderRadius:"50%",background:"#fff",position:"absolute",top:"3px",left:on?"25px":"3px",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}),liveCard:{padding:"12px",background:"var(--bg-secondary)",borderRadius:"8px",marginBottom:"8px"}};
+    function renderBracket() {
+      var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">';
+      REGIONS.forEach(function(region) {
+        html += '<div class="card"><div class="region-title">' + region + ' Region</div>';
+        if (data.bracket[region]) {
+          data.bracket[region].forEach(function(team) {
+            var seedColor = team.seed <= 4 ? '#E6F1FB;color:#0C447C' : team.seed <= 8 ? '#EAF3DE;color:#3B6D11' : team.seed <= 12 ? '#FAEEDA;color:#854F0B' : '#FAECE7;color:#993C1D';
+            html += '<div class="team-row" style="opacity:' + (team.eliminated ? '0.5' : '1') + '">';
+            html += '<div class="seed" style="background:' + seedColor + '">' + team.seed + '</div>';
+            html += '<input class="team-input" value="' + team.name + '" onchange="updateTeamName(\'' + region + '\',' + team.seed + ',this.value)">';
+            html += '<button class="wins-btn" onclick="changeWins(\'' + region + '\',' + team.seed + ',-1)">-</button>';
+            html += '<span style="width:20px;text-align:center">' + team.wins + '</span>';
+            html += '<button class="wins-btn" onclick="changeWins(\'' + region + '\',' + team.seed + ',1)">+</button>';
+            html += '<button style="padding:4px 8px;border-radius:4px;border:1px solid;font-size:10px;cursor:pointer;background:' + (team.eliminated ? '#450a0a;color:#fca5a5;border-color:#991b1b' : '#14532d;color:#86efac;border-color:#166534') + '" onclick="toggleElim(\'' + region + '\',' + team.seed + ')">' + (team.eliminated ? 'OUT' : 'IN') + '</button>';
+            html += '</div>';
+          });
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+      document.getElementById('bracket-tab').innerHTML = html;
+    }
 
-  if(loading)return React.createElement("div",{style:{textAlign:"center",padding:"60px 20px"}},React.createElement("div",{style:{fontSize:"48px",marginBottom:"12px"}},"🔧"),React.createElement("p",{style:{color:"var(--text-secondary)",fontSize:"18px"}},"Loading admin panel..."));
+    function renderPlayers() {
+      var html = '<div class="card">';
+      html += '<input type="text" id="new-player" placeholder="Enter player name">';
+      html += '<button class="btn-primary" onclick="addPlayer()">Add Player</button>';
+      html += '</div>';
+      
+      if (data.players.length === 0) {
+        html += '<div class="card"><p style="text-align:center;color:#a8a29e">No players yet</p></div>';
+      } else {
+        data.players.forEach(function(player, idx) {
+          html += '<div class="card">';
+          html += '<div class="player-row"><strong>' + player.name + '</strong><button class="btn-danger" onclick="removePlayer(' + idx + ')">Remove</button></div>';
+          html += '<input type="text" id="teams-' + idx + '" value="' + (player.teams || []).join(', ') + '" placeholder="Teams (comma separated)" onchange="updateTeams(' + idx + ',this.value)">';
+          html += '</div>';
+        });
+      }
+      document.getElementById('players-tab').innerHTML = html;
+    }
 
-  return React.createElement("div",null,React.createElement("div",{style:styles.header},React.createElement("div",{style:styles.titleRow},React.createElement("div",null,React.createElement("h1",{style:styles.title},"🔧 Commissioner Panel"),React.createElement("span",{style:styles.adminBadge},"ADMIN")),updateStatus&&React.createElement("span",{style:styles.statusBadge},updateStatus)),React.createElement("p",{style:styles.subtitle},lastUpdate?"Last saved: "+new Date(lastUpdate).toLocaleString():"Changes auto-save")),
+    function renderLeaderboard() {
+      var sorted = data.players.slice().sort(function(a, b) { return calculateScore(b) - calculateScore(a); });
+      var html = '';
+      if (sorted.length === 0) {
+        html = '<div class="card"><p style="text-align:center;color:#a8a29e">No players yet</p></div>';
+      } else {
+        sorted.forEach(function(player, i) {
+          var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+          html += '<div class="card" style="display:flex;align-items:center;gap:16px">';
+          html += '<div style="font-size:24px;width:40px;text-align:center">' + medal + '</div>';
+          html += '<div style="flex:1"><strong>' + player.name + '</strong><br><span style="font-size:13px;color:#a8a29e">' + (player.teams || []).join(', ') + '</span></div>';
+          html += '<div style="font-size:24px;font-weight:700;color:#BA7517">' + calculateScore(player).toFixed(1) + '</div>';
+          html += '</div>';
+        });
+      }
+      document.getElementById('leaderboard-tab').innerHTML = html;
+    }
 
-  React.createElement("div",{style:styles.tabs},["bracket","players","leaderboard","live","settings"].map(tab=>React.createElement("button",{key:tab,style:styles.tab(view===tab),onClick:()=>setView(tab)},tab==="bracket"?"📝 Edit Bracket":tab==="players"?"👥 Players":tab==="leaderboard"?"🏆 Leaderboard":tab==="live"?"📺 Live ("+activeGames.length+")":"⚙️ Settings"))),
+    function updateTeamName(region, seed, name) {
+      var team = data.bracket[region].find(function(t) { return t.seed === seed; });
+      if (team) { team.name = name; saveData(); }
+    }
 
-  view==="bracket"&&React.createElement("div",null,React.createElement("p",{style:{fontSize:"14px",color:"var(--text-secondary)",marginBottom:"16px"}},"Enter team names and update wins/eliminations. Changes save automatically."),React.createElement("div",{style:styles.regionGrid},REGIONS.map(region=>bracket[region]&&React.createElement("div",{key:region,style:styles.regionCard},React.createElement("h3",{style:styles.regionTitle},region+" Region"),bracket[region].map(team=>React.createElement("div",{key:team.seed,style:{...styles.teamRow,opacity:team.eliminated?.5:1}},React.createElement("div",{style:styles.seedBadge(team.seed)},team.seed),React.createElement("input",{style:styles.teamInput,value:team.name,onChange:e=>updateTeamName(region,team.seed,e.target.value),placeholder:"Seed "+team.seed}),React.createElement("div",{style:styles.winsControl},React.createElement("button",{style:styles.winsBtn,onClick:()=>updateTeamStatus(region,team.seed,"wins",Math.max(0,team.wins-1))},"-"),React.createElement("span",{style:styles.winsDisplay},team.wins),React.createElement("button",{style:styles.winsBtn,onClick:()=>updateTeamStatus(region,team.seed,"wins",Math.min(6,team.wins+1))},"+")),React.createElement("button",{style:styles.elimToggle(team.eliminated),onClick:()=>updateTeamStatus(region,team.seed,"eliminated",!team.eliminated)},team.eliminated?"OUT":"IN"))))))),
+    function changeWins(region, seed, delta) {
+      var team = data.bracket[region].find(function(t) { return t.seed === seed; });
+      if (team) { 
+        team.wins = Math.max(0, Math.min(6, team.wins + delta)); 
+        saveData(); 
+        renderBracket();
+        renderLeaderboard();
+      }
+    }
 
-  view==="players"&&React.createElement("div",null,React.createElement("div",{style:styles.card},React.createElement("div",{style:styles.inputRow},React.createElement("input",{style:styles.input,value:newPlayer,onChange:e=>setNewPlayer(e.target.value),placeholder:"Enter player name",onKeyDown:e=>e.key==="Enter"&&addPlayer()}),React.createElement("button",{style:styles.btnPrimary,onClick:addPlayer},"Add Player")),players.length===0?React.createElement("p",{style:{color:"var(--text-secondary)",margin:0,fontSize:"14px",textAlign:"center"}},"Add players to get started"):players.map((player,idx)=>React.createElement("div",{key:player.name,style:{...styles.card,marginBottom:"12px"}},React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}},React.createElement("span",{style:{fontWeight:600,fontSize:"16px"}},player.name),React.createElement("button",{style:styles.btnDanger,onClick:()=>removePlayer(player.name)},"Remove")),editingTeams===idx?React.cre
+    function toggleElim(region, seed) {
+      var team = data.bracket[region].find(function(t) { return t.seed === seed; });
+      if (team) { team.eliminated = !team.eliminated; saveData(); renderBracket(); }
+    }
+
+    function addPlayer() {
+      var input = document.getElementById('new-player');
+      var name = input.value.trim();
+      if (name && !data.players.find(function(p) { return p.name === name; })) {
+        data.players.push({ name: name, teams: [] });
+        input.value = '';
+        saveData();
+        renderPlayers();
+      }
+    }
+
+    function removePlayer(idx) {
+      data.players.splice(idx, 1);
+      saveData();
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    function updateTeams(idx, value) {
+      data.players[idx].teams = value.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; });
+      saveData();
+      renderLeaderboard();
+    }
+
+    fetchData();
+  </script>
+</body>
+</html>
