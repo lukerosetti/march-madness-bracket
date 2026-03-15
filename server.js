@@ -96,6 +96,11 @@ app.post('/api/update-scores', async function(req, res) {
 // STATIC FILES - must come AFTER API routes
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ADMIN PAGE - must come BEFORE catch-all
+app.get('/admin', function(req, res) {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
 // CATCH-ALL - must be LAST
 app.get('*', function(req, res) {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
