@@ -323,7 +323,29 @@ function renderSettings() {
   var rp = data.settings.roundPoints;
   var sm = data.settings.seedMultipliers;
   
-  var html = '<div class="settings-grid">';
+  var html = '';
+  
+  // Custom Header
+  html += '<div class="card" style="margin-bottom:16px">';
+  html += '<div class="card-title">🎨 Custom Header</div>';
+  html += '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">';
+  
+  if (data.settings.headerImage) {
+    html += '<img src="' + data.settings.headerImage + '" style="max-height:60px;border-radius:12px">';
+    html += '<button class="btn-danger" style="padding:8px 16px" onclick="removeHeader()">Remove</button>';
+  } else {
+    html += '<div style="padding:20px 40px;border:2px dashed rgba(255,255,255,0.2);border-radius:12px;cursor:pointer;text-align:center" onclick="document.getElementById(\'header-upload\').click()">';
+    html += '<div style="font-size:24px;margin-bottom:4px">📷</div>';
+    html += '<div style="font-size:13px;color:rgba(255,255,255,0.5)">Click to upload logo</div>';
+    html += '</div>';
+  }
+  
+  html += '<input type="file" id="header-upload" class="file-input" accept="image/*" onchange="uploadHeader(this)">';
+  html += '</div>';
+  html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:12px">Recommended: PNG or JPG, max height 80px</div>';
+  html += '</div>';
+  
+  html += '<div class="settings-grid">';
   
   // Points per round
   html += '<div class="card">';
@@ -447,7 +469,35 @@ function updateSettings() {
   };
   saveData();
 }
+function uploadHeader(input) {
+  var file = input.files[0];
+  if (!file) return;
+  
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var maxH = 120;
+      var scale = Math.min(1, maxH / img.height);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      data.settings.headerImage = canvas.toDataURL('image/png', 0.9);
+      saveData();
+      render();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
+function removeHeader() {
+  data.settings.headerImage = '';
+  saveData();
+  render();
+}
 // Init
 fetchData();
   </script>
