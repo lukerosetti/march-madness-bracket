@@ -9,12 +9,27 @@
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Inter',system-ui,sans-serif;background:linear-gradient(135deg,#0f0f13 0%,#1a1a24 100%);color:#fff;min-height:100vh}
     #app{max-width:1200px;margin:0 auto;padding:20px}
+    
+    /* Hero Header */
+    .hero{position:relative;width:100%;height:240px;border-radius:20px;overflow:hidden;margin-bottom:24px;border:1px solid rgba(255,255,255,0.1)}
+    .hero-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1s ease}
+    .hero-slide.active{opacity:1}
+    .hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(15,15,19,0.95) 0%,rgba(15,15,19,0.4) 40%,rgba(15,15,19,0.2) 100%);pointer-events:none}
+    .hero-content{position:absolute;bottom:24px;left:28px;right:28px;display:flex;justify-content:space-between;align-items:flex-end}
+    .hero-title{font-size:32px;font-weight:800;text-shadow:0 2px 12px rgba(0,0,0,0.5)}
+    .hero-subtitle{font-size:14px;color:rgba(255,255,255,0.7);margin-top:4px}
+    .hero-dots{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+    .hero-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.3);transition:all 0.3s;cursor:pointer}
+    .hero-dot.active{background:#fff;transform:scale(1.2)}
+    
+    /* Fallback header when no images */
     .header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:rgba(255,255,255,0.03);border-radius:16px;border:1px solid rgba(255,255,255,0.06);margin-bottom:24px}
     .logo{display:flex;align-items:center;gap:12px}
     .logo-icon{width:40px;height:40px;background:linear-gradient(135deg,#00d4aa,#00b894);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
     .logo-text{font-size:18px;font-weight:700}
     .logo-sub{font-size:12px;color:rgba(255,255,255,0.5)}
     .live-badge{padding:8px 16px;background:rgba(0,212,170,0.15);border:1px solid rgba(0,212,170,0.3);border-radius:20px;font-size:12px;color:#00d4aa;font-weight:600}
+    
     .tabs{display:flex;gap:6px;padding:6px;background:rgba(255,255,255,0.03);border-radius:14px;border:1px solid rgba(255,255,255,0.06);margin-bottom:24px}
     .tab{flex:1;padding:12px;border-radius:10px;text-align:center;font-size:13px;font-weight:500;color:rgba(255,255,255,0.6);cursor:pointer;border:none;background:transparent;transition:all 0.2s}
     .tab.active{background:linear-gradient(135deg,#00d4aa,#00b894);color:#0f0f13;font-weight:600}
@@ -85,26 +100,17 @@
     .trophy-icon{font-size:32px;margin-bottom:8px}
     .champion-label{font-size:12px;color:rgba(255,215,0,0.6);margin-bottom:4px}
     .champion-name{font-size:18px;font-weight:700}
-    .your-teams{margin-top:20px;padding:16px 20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px}
-    .your-teams-title{font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);margin-bottom:12px}
-    .your-teams-list{display:flex;gap:10px;flex-wrap:wrap}
-    .your-team-chip{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600}
-    .your-team-chip.alive{background:rgba(0,212,170,0.12);border:1px solid rgba(0,212,170,0.25);color:#00d4aa}
-    .your-team-chip.dead{background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.2);color:rgba(255,100,100,0.9);text-decoration:line-through}
-    .your-team-chip .dot{width:8px;height:8px;border-radius:50%}
-    .your-team-chip.alive .dot{background:#00d4aa}
-    .your-team-chip.dead .dot{background:#ff6464}
-    .your-team-chip .wins{font-size:11px;opacity:0.7;font-weight:500}
   </style>
 </head>
 <body>
   <div id="app"></div>
   <script>
-var data = { players: [], bracket: {}, settings: { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3} } };
+var data = { players: [], bracket: {}, settings: { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3}, headerImages: [] } };
 var liveGames = [];
 var currentTab = 'standings';
 var currentRegion = 'East';
 var countdown = 60;
+var currentSlide = 0;
 var REGIONS = ['East', 'West', 'South', 'Midwest'];
 var MATCHUP_ORDER = [[1,16],[8,9],[5,12],[4,13],[6,11],[3,14],[7,10],[2,15]];
 
@@ -174,7 +180,10 @@ function fetchData() {
   fetch('/api/data').then(function(r){return r.json();}).then(function(d) {
     data = d;
     if (!data.settings) {
-      data.settings = { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3} };
+      data.settings = { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3}, headerImages: [] };
+    }
+    if (!data.settings.headerImages) {
+      data.settings.headerImages = [];
     }
     render();
     countdown = 60;
@@ -198,22 +207,74 @@ function showRegion(region) {
   render();
 }
 
+function goToSlide(idx) {
+  currentSlide = idx;
+  updateSlides();
+}
+
+function updateSlides() {
+  var slides = document.querySelectorAll('.hero-slide');
+  var dots = document.querySelectorAll('.hero-dot');
+  slides.forEach(function(s, i) {
+    s.classList.toggle('active', i === currentSlide);
+  });
+  dots.forEach(function(d, i) {
+    d.classList.toggle('active', i === currentSlide);
+  });
+}
+
+function rotateSlides() {
+  var headerImages = data.settings && data.settings.headerImages || [];
+  if (headerImages.length > 1) {
+    currentSlide = (currentSlide + 1) % headerImages.length;
+    updateSlides();
+  }
+}
+
 function render() {
   var html = '';
-  
-  // Header
-  // Header
-  html += '<div class="header">';
-  if (data.settings && data.settings.headerImage) {
-    html += '<div class="logo"><img src="' + data.settings.headerImage + '" style="max-height:50px;border-radius:8px"></div>';
-  } else {
-    html += '<div class="logo"><div class="logo-icon">🏀</div><div><div class="logo-text">Office Madness</div><div class="logo-sub">2026 Tournament</div></div></div>';
-  }
+  var headerImages = data.settings && data.settings.headerImages || [];
   var activeLive = liveGames.filter(function(g){return !g.completed && g.status !== 'Scheduled';}).length;
-  if (activeLive > 0) {
-    html += '<div class="live-badge">🔴 ' + activeLive + ' LIVE</div>';
+  
+  // Hero header with rotating images OR fallback header
+  if (headerImages.length > 0) {
+    html += '<div class="hero">';
+    
+    // Slides
+    headerImages.forEach(function(img, i) {
+      html += '<div class="hero-slide' + (i === currentSlide ? ' active' : '') + '" style="background-image:url(' + img + ')"></div>';
+    });
+    
+    // Overlay
+    html += '<div class="hero-overlay"></div>';
+    
+    // Content
+    html += '<div class="hero-content">';
+    html += '<div><div class="hero-title">Office Madness 2026</div><div class="hero-subtitle">March Madness Bracket Challenge</div></div>';
+    if (activeLive > 0) {
+      html += '<div class="live-badge">🔴 ' + activeLive + ' LIVE</div>';
+    }
+    html += '</div>';
+    
+    // Dots (if more than 1 image)
+    if (headerImages.length > 1) {
+      html += '<div class="hero-dots">';
+      headerImages.forEach(function(_, i) {
+        html += '<div class="hero-dot' + (i === currentSlide ? ' active' : '') + '" onclick="goToSlide(' + i + ')"></div>';
+      });
+      html += '</div>';
+    }
+    
+    html += '</div>';
+  } else {
+    // Fallback header
+    html += '<div class="header">';
+    html += '<div class="logo"><div class="logo-icon">🏀</div><div><div class="logo-text">Office Madness</div><div class="logo-sub">2026 Tournament</div></div></div>';
+    if (activeLive > 0) {
+      html += '<div class="live-badge">🔴 ' + activeLive + ' LIVE</div>';
+    }
+    html += '</div>';
   }
-  html += '</div>';
   
   // Tabs
   html += '<div class="tabs">';
@@ -499,6 +560,7 @@ fetchLiveGames();
 setInterval(fetchData, 60000);
 setInterval(fetchLiveGames, 30000);
 setInterval(function() { countdown--; if (countdown <= 0) countdown = 60; render(); }, 1000);
+setInterval(rotateSlides, 5000);
   </script>
 </body>
 </html>
