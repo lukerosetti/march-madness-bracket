@@ -6,7 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 const DEFAULT_DATA = {
   players: [],
@@ -17,7 +17,10 @@ const DEFAULT_DATA = {
     Midwest: Array.from({ length: 16 }, (_, i) => ({ seed: i + 1, name: "Midwest " + (i + 1), eliminated: false, wins: 0 }))
   },
   lastUpdate: null,
-  autoUpdate: true
+  settings: {
+    roundPoints: { 1: 1, 2: 2, 3: 8, 4: 16, 5: 32, 6: 32 },
+    seedMultipliers: { tier1: 1, tier2: 1.5, tier3: 2, tier4: 3 }
+  }
 };
 
 function loadData() {
@@ -40,23 +43,14 @@ if (!fs.existsSync(DATA_FILE)) {
   saveData(JSON.parse(JSON.stringify(DEFAULT_DATA)));
 }
 
-// API ROUTES - these must come BEFORE static files
+// API ROUTES
 app.get('/api/data', function(req, res) {
-  try {
-    var data = loadData();
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to load data' });
-  }
+  res.json(loadData());
 });
 
 app.post('/api/data', function(req, res) {
-  try {
-    saveData(req.body);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to save data' });
-  }
+  saveData(req.body);
+  res.json({ success: true });
 });
 
 app.get('/api/live-scores', async function(req, res) {
@@ -77,8 +71,22 @@ app.get('/api/live-scores', async function(req, res) {
             id: event.id,
             completed: statusType && statusType.completed || false,
             status: statusType && statusType.description || 'Unknown',
-            home: { name: homeTeam.team && homeTeam.team.displayName, shortName: homeTeam.team && homeTeam.team.abbreviation, score: parseInt(homeTeam.score) || 0, winner: homeTeam.winner || false },
-            away: { name: awayTeam.team && awayTeam.team.displayName, shortName: awayTeam.team && awayTeam.team.abbreviation, score: parseInt(awayTeam.score) || 0, winner: awayTeam.winner || false }
+            clock: competition.status && competition.status.displayClock || '',
+            period: competition.status && competition.status.period || 0,
+            home: { 
+              name: homeTeam.team && homeTeam.team.displayName, 
+              shortName: homeTeam.team && homeTeam.team.abbreviation, 
+              score: parseInt(homeTeam.score) || 0, 
+              seed: homeTeam.curatedRank && homeTeam.curatedRank.current,
+              winner: homeTeam.winner || false 
+            },
+            away: { 
+              name: awayTeam.team && awayTeam.team.displayName, 
+              shortName: awayTeam.team && awayTeam.team.abbreviation, 
+              score: parseInt(awayTeam.score) || 0, 
+              seed: awayTeam.curatedRank && awayTeam.curatedRank.current,
+              winner: awayTeam.winner || false 
+            }
           });
         }
       }
@@ -90,22 +98,22 @@ app.get('/api/live-scores', async function(req, res) {
 });
 
 app.post('/api/update-scores', async function(req, res) {
-  res.json({ updated: false, message: 'Manual update' });
+  res.json({ updated: false });
 });
 
-// STATIC FILES - must come AFTER API routes
+// STATIC FILES
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ADMIN PAGE - must come BEFORE catch-all
+// ADMIN PAGE
 app.get('/admin', function(req, res) {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// CATCH-ALL - must be LAST
+// CATCH-ALL
 app.get('*', function(req, res) {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, function() {
-  console.log('March Madness Bracket Challenge is running on port ' + PORT);
+  console.log('March Madness running on port ' + PORT);
 });
