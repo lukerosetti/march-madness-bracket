@@ -202,8 +202,13 @@ function render() {
   var html = '';
   
   // Header
+  // Header
   html += '<div class="header">';
-  html += '<div class="logo"><div class="logo-icon">🏀</div><div><div class="logo-text">Office Madness</div><div class="logo-sub">2026 Tournament</div></div></div>';
+  if (data.settings && data.settings.headerImage) {
+    html += '<div class="logo"><img src="' + data.settings.headerImage + '" style="max-height:50px;border-radius:8px"></div>';
+  } else {
+    html += '<div class="logo"><div class="logo-icon">🏀</div><div><div class="logo-text">Office Madness</div><div class="logo-sub">2026 Tournament</div></div></div>';
+  }
   var activeLive = liveGames.filter(function(g){return !g.completed && g.status !== 'Scheduled';}).length;
   if (activeLive > 0) {
     html += '<div class="live-badge">🔴 ' + activeLive + ' LIVE</div>';
