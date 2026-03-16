@@ -81,6 +81,17 @@
     .rank{width:32px;text-align:center;font-size:18px;font-weight:700;color:rgba(255,255,255,0.4)}
     .score{font-size:24px;font-weight:800;color:#00d4aa}
     .teams-list{font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px}
+    .header-images-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:16px}
+    .header-image-item{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,0.1);cursor:pointer;transition:all 0.2s}
+    .header-image-item:hover{border-color:rgba(245,158,11,0.5)}
+    .header-image-item img{width:100%;height:100%;object-fit:cover}
+    .header-image-item .remove-btn{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:rgba(239,68,68,0.9);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:0;transition:opacity 0.2s}
+    .header-image-item:hover .remove-btn{opacity:1}
+    .header-image-item .order-badge{position:absolute;bottom:8px;left:8px;padding:4px 10px;background:rgba(0,0,0,0.7);border-radius:6px;font-size:11px;font-weight:600}
+    .add-header-image{aspect-ratio:16/9;border:2px dashed rgba(255,255,255,0.2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s}
+    .add-header-image:hover{border-color:rgba(245,158,11,0.5);background:rgba(245,158,11,0.05)}
+    .add-header-image span{font-size:24px;margin-bottom:4px}
+    .add-header-image p{font-size:12px;color:rgba(255,255,255,0.5)}
   </style>
 </head>
 <body>
@@ -88,7 +99,7 @@
   <div id="toast" class="saved-toast">✓ Changes saved!</div>
   
   <script>
-var data = { players: [], bracket: {}, settings: { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3} } };
+var data = { players: [], bracket: {}, settings: { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3}, headerImages: [] } };
 var currentTab = 'players';
 var REGIONS = ['East', 'West', 'South', 'Midwest'];
 
@@ -131,7 +142,10 @@ function fetchData() {
   fetch('/api/data').then(function(r){return r.json();}).then(function(d) {
     data = d;
     if (!data.settings) {
-      data.settings = { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3} };
+      data.settings = { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3}, headerImages: [] };
+    }
+    if (!data.settings.headerImages) {
+      data.settings.headerImages = [];
     }
     render();
   });
@@ -322,27 +336,36 @@ function renderLeaderboard() {
 function renderSettings() {
   var rp = data.settings.roundPoints;
   var sm = data.settings.seedMultipliers;
+  var headerImages = data.settings.headerImages || [];
   
   var html = '';
   
-  // Custom Header
-  html += '<div class="card" style="margin-bottom:16px">';
-  html += '<div class="card-title">🎨 Custom Header</div>';
-  html += '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">';
+  // Header Images Section
+  html += '<div class="card">';
+  html += '<div class="card-title">🖼️ Header Images (Rotating Banner)</div>';
+  html += '<p style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px">Upload up to 5 images that will rotate in the header. Recommended size: 1200x400px or similar 3:1 ratio.</p>';
   
-  if (data.settings.headerImage) {
-    html += '<img src="' + data.settings.headerImage + '" style="max-height:60px;border-radius:12px">';
-    html += '<button class="btn-danger" style="padding:8px 16px" onclick="removeHeader()">Remove</button>';
-  } else {
-    html += '<div style="padding:20px 40px;border:2px dashed rgba(255,255,255,0.2);border-radius:12px;cursor:pointer;text-align:center" onclick="document.getElementById(\'header-upload\').click()">';
-    html += '<div style="font-size:24px;margin-bottom:4px">📷</div>';
-    html += '<div style="font-size:13px;color:rgba(255,255,255,0.5)">Click to upload logo</div>';
+  html += '<div class="header-images-grid">';
+  
+  // Existing images
+  headerImages.forEach(function(img, idx) {
+    html += '<div class="header-image-item">';
+    html += '<img src="' + img + '">';
+    html += '<button class="remove-btn" onclick="removeHeaderImage(' + idx + ')">×</button>';
+    html += '<div class="order-badge">' + (idx + 1) + '</div>';
     html += '</div>';
+  });
+  
+  // Add new image button (if less than 5)
+  if (headerImages.length < 5) {
+    html += '<div class="add-header-image" onclick="document.getElementById(\'header-upload\').click()">';
+    html += '<span>+</span>';
+    html += '<p>Add Image</p>';
+    html += '</div>';
+    html += '<input type="file" id="header-upload" class="file-input" accept="image/*" onchange="uploadHeaderImage(this)">';
   }
   
-  html += '<input type="file" id="header-upload" class="file-input" accept="image/*" onchange="uploadHeader(this)">';
   html += '</div>';
-  html += '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:12px">Recommended: PNG or JPG, max height 80px</div>';
   html += '</div>';
   
   html += '<div class="settings-grid">';
@@ -403,7 +426,6 @@ function uploadImage(idx, input) {
   
   var reader = new FileReader();
   reader.onload = function(e) {
-    // Resize image
     var img = new Image();
     img.onload = function() {
       var canvas = document.createElement('canvas');
@@ -412,7 +434,6 @@ function uploadImage(idx, input) {
       canvas.height = size;
       var ctx = canvas.getContext('2d');
       
-      // Crop to square
       var min = Math.min(img.width, img.height);
       var sx = (img.width - min) / 2;
       var sy = (img.height - min) / 2;
@@ -429,6 +450,39 @@ function uploadImage(idx, input) {
 
 function removeImage(idx) {
   data.players[idx].image = '';
+  saveData();
+  render();
+}
+
+function uploadHeaderImage(input) {
+  var file = input.files[0];
+  if (!file) return;
+  
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var maxW = 1200;
+      var maxH = 400;
+      var scale = Math.min(1, maxW / img.width, maxH / img.height);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      if (!data.settings.headerImages) data.settings.headerImages = [];
+      data.settings.headerImages.push(canvas.toDataURL('image/jpeg', 0.85));
+      saveData();
+      render();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeHeaderImage(idx) {
+  data.settings.headerImages.splice(idx, 1);
   saveData();
   render();
 }
@@ -469,35 +523,7 @@ function updateSettings() {
   };
   saveData();
 }
-function uploadHeader(input) {
-  var file = input.files[0];
-  if (!file) return;
-  
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var img = new Image();
-    img.onload = function() {
-      var canvas = document.createElement('canvas');
-      var maxH = 120;
-      var scale = Math.min(1, maxH / img.height);
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      var ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      data.settings.headerImage = canvas.toDataURL('image/png', 0.9);
-      saveData();
-      render();
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
 
-function removeHeader() {
-  data.settings.headerImage = '';
-  saveData();
-  render();
-}
 // Init
 fetchData();
   </script>
