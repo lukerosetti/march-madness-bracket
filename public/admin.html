@@ -4,302 +4,452 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - March Madness</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,sans-serif;background:#1c1917;color:#fafaf9;padding:20px}
-    #app{max-width:1000px;margin:0 auto}
-    h1{font-size:24px;margin-bottom:20px;text-align:center}
-    h2{font-size:18px;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #BA7517}
-    .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;justify-content:center}
-    .tab{padding:10px 20px;border:1px solid #444;border-radius:8px;background:#292524;cursor:pointer;color:#fafaf9}
-    .tab.active{background:#BA7517;border-color:#BA7517}
-    .card{background:#292524;border:1px solid #444;border-radius:12px;padding:20px;margin-bottom:16px}
-    input[type=text],input[type=number]{padding:10px;border:1px solid #444;border-radius:8px;background:#1c1917;color:#fafaf9}
-    input[type=text]{width:100%;margin-bottom:10px}
+    body{font-family:'Inter',system-ui,sans-serif;background:linear-gradient(135deg,#0f0f13 0%,#1a1a24 100%);color:#fff;min-height:100vh}
+    #app{max-width:1200px;margin:0 auto;padding:20px}
+    .header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:rgba(255,255,255,0.03);border-radius:16px;border:1px solid rgba(255,255,255,0.06);margin-bottom:24px}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo-icon{width:40px;height:40px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+    .logo-text{font-size:18px;font-weight:700}
+    .logo-sub{font-size:12px;color:rgba(255,255,255,0.5)}
+    .admin-badge{padding:8px 16px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:20px;font-size:12px;color:#f59e0b;font-weight:600}
+    .tabs{display:flex;gap:6px;padding:6px;background:rgba(255,255,255,0.03);border-radius:14px;border:1px solid rgba(255,255,255,0.06);margin-bottom:24px;flex-wrap:wrap}
+    .tab{flex:1;min-width:100px;padding:12px;border-radius:10px;text-align:center;font-size:13px;font-weight:500;color:rgba(255,255,255,0.6);cursor:pointer;border:none;background:transparent;transition:all 0.2s}
+    .tab.active{background:linear-gradient(135deg,#f59e0b,#d97706);color:#0f0f13;font-weight:600}
+    .tab:hover:not(.active){background:rgba(255,255,255,0.05)}
+    .card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;margin-bottom:16px}
+    .card-title{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    input[type=text],input[type=number]{padding:12px 16px;border:1px solid rgba(255,255,255,0.1);border-radius:10px;background:rgba(255,255,255,0.05);color:#fff;font-size:14px;outline:none;transition:border-color 0.2s}
+    input[type=text]:focus,input[type=number]:focus{border-color:rgba(245,158,11,0.5)}
+    input[type=text]{width:100%}
     input[type=number]{width:80px;text-align:center}
-    button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px}
-    .btn-primary{background:#BA7517;color:#fff}
-    .btn-danger{background:#991b1b;color:#fff;padding:6px 12px;font-size:12px}
-    .btn-success{background:#166534;color:#fff}
-    .player-row{display:flex;justify-content:space-between;align-items:center;padding:12px;background:#1c1917;border-radius:8px;margin-bottom:8px}
-    .team-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-    .seed{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#E6F1FB;color:#0C447C}
-    .team-input{flex:1;padding:8px;border:1px solid #444;border-radius:6px;background:#1c1917;color:#fafaf9}
-    .wins-btn{width:28px;height:28px;border:1px solid #444;border-radius:6px;background:#292524;color:#fafaf9;cursor:pointer;font-size:16px}
-    .region{margin-bottom:24px}
-    .region-title{font-size:18px;font-weight:600;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #BA7517}
+    button{padding:12px 24px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;transition:all 0.2s}
+    .btn-primary{background:linear-gradient(135deg,#f59e0b,#d97706);color:#0f0f13}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(245,158,11,0.3)}
+    .btn-danger{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)}
+    .btn-danger:hover{background:rgba(239,68,68,0.25)}
+    .btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+    .btn-secondary{background:rgba(255,255,255,0.1);color:#fff}
+    .player-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;margin-bottom:12px}
+    .player-header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+    .avatar{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;background-size:cover;background-position:center;position:relative;cursor:pointer}
+    .avatar.no-image{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+    .avatar-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.5);border-radius:14px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s}
+    .avatar:hover .avatar-overlay{opacity:1}
+    .avatar-overlay span{font-size:12px}
+    .player-info{flex:1}
+    .player-name{font-size:17px;font-weight:600;margin-bottom:4px}
+    .player-score{font-size:13px;color:#00d4aa}
+    .player-actions{display:flex;gap:8px}
+    .teams-input{margin-top:12px}
+    .teams-input label{display:block;font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px}
+    .region-section{margin-bottom:24px}
+    .region-title{font-size:18px;font-weight:700;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid rgba(245,158,11,0.3);display:flex;align-items:center;gap:8px}
+    .team-row{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,0.02);border-radius:10px;margin-bottom:8px;transition:background 0.2s}
+    .team-row:hover{background:rgba(255,255,255,0.05)}
+    .seed-badge{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+    .seed-badge.t1{background:linear-gradient(135deg,#ffd700,#ffb800);color:#0f0f13}
+    .seed-badge.t2{background:rgba(99,102,241,0.2);color:#818cf8}
+    .seed-badge.t3{background:rgba(34,197,94,0.2);color:#4ade80}
+    .seed-badge.t4{background:rgba(251,191,36,0.2);color:#fbbf24}
+    .team-input{flex:1;padding:10px 14px;border:1px solid rgba(255,255,255,0.1);border-radius:8px;background:rgba(255,255,255,0.05);color:#fff;font-size:14px}
+    .team-input:focus{outline:none;border-color:rgba(245,158,11,0.5)}
+    .wins-control{display:flex;align-items:center;gap:8px}
+    .wins-btn{width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+    .wins-btn:hover{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2)}
+    .wins-count{width:28px;text-align:center;font-size:16px;font-weight:600}
+    .status-btn{padding:6px 12px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid;transition:all 0.2s}
+    .status-btn.in{background:rgba(16,185,129,0.15);color:#10b981;border-color:rgba(16,185,129,0.3)}
+    .status-btn.out{background:rgba(239,68,68,0.15);color:#f87171;border-color:rgba(239,68,68,0.3)}
+    .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+    .setting-row{display:flex;justify-content:space-between;align-items:center;padding:14px;background:rgba(255,255,255,0.03);border-radius:10px;margin-bottom:8px}
+    .setting-label{font-size:14px;color:rgba(255,255,255,0.8)}
+    .setting-value{display:flex;align-items:center;gap:4px}
+    .saved-toast{position:fixed;bottom:24px;right:24px;padding:16px 24px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:12px;font-weight:600;opacity:0;transform:translateY(20px);transition:all 0.3s;z-index:1000}
+    .saved-toast.show{opacity:1;transform:translateY(0)}
+    .share-box{padding:16px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px dashed rgba(255,255,255,0.2)}
+    .share-url{padding:12px 16px;background:rgba(0,0,0,0.3);border-radius:8px;font-family:monospace;font-size:13px;color:#00d4aa;word-break:break-all}
     .hidden{display:none}
-    .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .setting-row{display:flex;justify-content:space-between;align-items:center;padding:12px;background:#1c1917;border-radius:8px;margin-bottom:8px}
-    .setting-label{font-size:14px}
-    .saved-msg{color:#86efac;font-size:14px;margin-left:12px}
-    @media(max-width:600px){.settings-grid{grid-template-columns:1fr}}
+    .add-player-form{display:flex;gap:12px;margin-bottom:24px}
+    .add-player-form input{flex:1}
+    .empty-state{text-align:center;padding:40px;color:rgba(255,255,255,0.5)}
+    .file-input{display:none}
+    .leaderboard-card{display:flex;align-items:center;gap:16px;padding:16px 20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;margin-bottom:12px}
+    .leaderboard-card.first{background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,180,0,0.06));border-color:rgba(255,215,0,0.25)}
+    .rank{width:32px;text-align:center;font-size:18px;font-weight:700;color:rgba(255,255,255,0.4)}
+    .score{font-size:24px;font-weight:800;color:#00d4aa}
+    .teams-list{font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px}
   </style>
 </head>
 <body>
-  <div id="app">
-    <h1>🔧 Commissioner Panel</h1>
-    <div class="tabs">
-      <button class="tab active" onclick="showTab('bracket')">📝 Bracket</button>
-      <button class="tab" onclick="showTab('players')">👥 Players</button>
-      <button class="tab" onclick="showTab('leaderboard')">🏆 Scores</button>
-      <button class="tab" onclick="showTab('settings')">⚙️ Settings</button>
-    </div>
-    <div id="bracket-tab"></div>
-    <div id="players-tab" class="hidden"></div>
-    <div id="leaderboard-tab" class="hidden"></div>
-    <div id="settings-tab" class="hidden"></div>
-  </div>
-
+  <div id="app"></div>
+  <div id="toast" class="saved-toast">✓ Changes saved!</div>
+  
   <script>
-    var data = { 
-      players: [], 
-      bracket: {}, 
-      lastUpdate: null,
-      settings: {
-        roundPoints: { 1: 1, 2: 2, 3: 8, 4: 16, 5: 32, 6: 32 },
-        seedMultipliers: { tier1: 1, tier2: 1.5, tier3: 2, tier4: 3 }
-      }
-    };
-    var REGIONS = ['East', 'West', 'South', 'Midwest'];
+var data = { players: [], bracket: {}, settings: { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3} } };
+var currentTab = 'players';
+var REGIONS = ['East', 'West', 'South', 'Midwest'];
 
-    function seedMultiplier(seed) {
-      var m = data.settings && data.settings.seedMultipliers || { tier1: 1, tier2: 1.5, tier3: 2, tier4: 3 };
-      if (seed <= 4) return m.tier1;
-      if (seed <= 8) return m.tier2;
-      if (seed <= 12) return m.tier3;
-      return m.tier4;
-    }
+function seedMultiplier(seed) {
+  var m = data.settings && data.settings.seedMultipliers || {tier1:1,tier2:1.5,tier3:2,tier4:3};
+  if (seed <= 4) return m.tier1;
+  if (seed <= 8) return m.tier2;
+  if (seed <= 12) return m.tier3;
+  return m.tier4;
+}
 
-    function getRoundPoints(round) {
-      var rp = data.settings && data.settings.roundPoints || { 1: 1, 2: 2, 3: 8, 4: 16, 5: 32, 6: 32 };
-      return rp[round] || 0;
-    }
+function getRoundPoints(round) {
+  var rp = data.settings && data.settings.roundPoints || {1:1,2:2,3:8,4:16,5:32,6:32};
+  return rp[round] || 0;
+}
 
-    function calculateScore(player) {
-      var total = 0;
-      if (!player.teams) return 0;
-      player.teams.forEach(function(tn) {
-        REGIONS.forEach(function(region) {
-          if (!data.bracket[region]) return;
-          var team = data.bracket[region].find(function(t) { return t.name.toLowerCase() === tn.toLowerCase(); });
-          if (team) {
-            for (var i = 1; i <= team.wins; i++) {
-              total += getRoundPoints(i) * seedMultiplier(team.seed);
-            }
-          }
-        });
-      });
-      return Math.round(total * 10) / 10;
-    }
-
-    function fetchData() {
-      fetch('/api/data')
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          data = d;
-          if (!data.settings) {
-            data.settings = {
-              roundPoints: { 1: 1, 2: 2, 3: 8, 4: 16, 5: 32, 6: 32 },
-              seedMultipliers: { tier1: 1, tier2: 1.5, tier3: 2, tier4: 3 }
-            };
-          }
-          renderBracket();
-          renderPlayers();
-          renderLeaderboard();
-          renderSettings();
-        });
-    }
-
-    function saveData(callback) {
-      fetch('/api/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      }).then(function() {
-        if (callback) callback();
-      });
-    }
-
-    function showTab(tab) {
-      document.querySelectorAll('.tab').forEach(function(t, i) {
-        t.classList.toggle('active', 
-          (tab === 'bracket' && i === 0) || 
-          (tab === 'players' && i === 1) || 
-          (tab === 'leaderboard' && i === 2) ||
-          (tab === 'settings' && i === 3)
-        );
-      });
-      document.getElementById('bracket-tab').classList.toggle('hidden', tab !== 'bracket');
-      document.getElementById('players-tab').classList.toggle('hidden', tab !== 'players');
-      document.getElementById('leaderboard-tab').classList.toggle('hidden', tab !== 'leaderboard');
-      document.getElementById('settings-tab').classList.toggle('hidden', tab !== 'settings');
-    }
-
-    function renderBracket() {
-      var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">';
-      REGIONS.forEach(function(region) {
-        html += '<div class="card"><div class="region-title">' + region + ' Region</div>';
-        if (data.bracket[region]) {
-          data.bracket[region].forEach(function(team) {
-            var seedColor = team.seed <= 4 ? '#E6F1FB;color:#0C447C' : team.seed <= 8 ? '#EAF3DE;color:#3B6D11' : team.seed <= 12 ? '#FAEEDA;color:#854F0B' : '#FAECE7;color:#993C1D';
-            html += '<div class="team-row" style="opacity:' + (team.eliminated ? '0.5' : '1') + '">';
-            html += '<div class="seed" style="background:' + seedColor + '">' + team.seed + '</div>';
-            html += '<input class="team-input" value="' + team.name + '" onchange="updateTeamName(\'' + region + '\',' + team.seed + ',this.value)">';
-            html += '<button class="wins-btn" onclick="changeWins(\'' + region + '\',' + team.seed + ',-1)">-</button>';
-            html += '<span style="width:20px;text-align:center">' + team.wins + '</span>';
-            html += '<button class="wins-btn" onclick="changeWins(\'' + region + '\',' + team.seed + ',1)">+</button>';
-            html += '<button style="padding:4px 8px;border-radius:4px;border:1px solid;font-size:10px;cursor:pointer;background:' + (team.eliminated ? '#450a0a;color:#fca5a5;border-color:#991b1b' : '#14532d;color:#86efac;border-color:#166534') + '" onclick="toggleElim(\'' + region + '\',' + team.seed + ')">' + (team.eliminated ? 'OUT' : 'IN') + '</button>';
-            html += '</div>';
-          });
+function calculateScore(player) {
+  var total = 0;
+  if (!player.teams) return 0;
+  player.teams.forEach(function(tn) {
+    REGIONS.forEach(function(region) {
+      if (!data.bracket[region]) return;
+      var team = data.bracket[region].find(function(t) { return t.name.toLowerCase() === tn.toLowerCase(); });
+      if (team) {
+        for (var i = 1; i <= team.wins; i++) {
+          total += getRoundPoints(i) * seedMultiplier(team.seed);
         }
+      }
+    });
+  });
+  return Math.round(total * 10) / 10;
+}
+
+function getAvatarColors(index) {
+  var colors = [['#6366f1','#8b5cf6'],['#ec4899','#f43f5e'],['#3b82f6','#2563eb'],['#f59e0b','#d97706'],['#10b981','#059669'],['#8b5cf6','#7c3aed']];
+  return colors[index % colors.length];
+}
+
+function fetchData() {
+  fetch('/api/data').then(function(r){return r.json();}).then(function(d) {
+    data = d;
+    if (!data.settings) {
+      data.settings = { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3} };
+    }
+    render();
+  });
+}
+
+function saveData(showToast) {
+  fetch('/api/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(function() {
+    if (showToast !== false) {
+      var toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(function() { toast.classList.remove('show'); }, 2000);
+    }
+  });
+}
+
+function showTab(tab) {
+  currentTab = tab;
+  render();
+}
+
+function render() {
+  var html = '';
+  
+  // Header
+  html += '<div class="header">';
+  html += '<div class="logo"><div class="logo-icon">🔧</div><div><div class="logo-text">Commissioner Panel</div><div class="logo-sub">Office Madness 2026</div></div></div>';
+  html += '<div class="admin-badge">🔒 Admin Only</div>';
+  html += '</div>';
+  
+  // Tabs
+  html += '<div class="tabs">';
+  html += '<button class="tab' + (currentTab === 'players' ? ' active' : '') + '" onclick="showTab(\'players\')">👥 Players</button>';
+  html += '<button class="tab' + (currentTab === 'bracket' ? ' active' : '') + '" onclick="showTab(\'bracket\')">📝 Bracket</button>';
+  html += '<button class="tab' + (currentTab === 'leaderboard' ? ' active' : '') + '" onclick="showTab(\'leaderboard\')">🏆 Scores</button>';
+  html += '<button class="tab' + (currentTab === 'settings' ? ' active' : '') + '" onclick="showTab(\'settings\')">⚙️ Settings</button>';
+  html += '</div>';
+  
+  if (currentTab === 'players') {
+    html += renderPlayers();
+  } else if (currentTab === 'bracket') {
+    html += renderBracket();
+  } else if (currentTab === 'leaderboard') {
+    html += renderLeaderboard();
+  } else if (currentTab === 'settings') {
+    html += renderSettings();
+  }
+  
+  document.getElementById('app').innerHTML = html;
+}
+
+function renderPlayers() {
+  var html = '';
+  
+  // Add player form
+  html += '<div class="card">';
+  html += '<div class="card-title">➕ Add New Player</div>';
+  html += '<div class="add-player-form">';
+  html += '<input type="text" id="new-player-name" placeholder="Enter player name...">';
+  html += '<button class="btn-primary" onclick="addPlayer()">Add Player</button>';
+  html += '</div>';
+  html += '</div>';
+  
+  // Share link
+  html += '<div class="card">';
+  html += '<div class="card-title">🔗 Share Link</div>';
+  html += '<div class="share-box">';
+  html += '<div style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:8px">Send this link to your friends:</div>';
+  html += '<div class="share-url">' + window.location.origin + '</div>';
+  html += '</div>';
+  html += '</div>';
+  
+  // Players list
+  html += '<div class="card">';
+  html += '<div class="card-title">👥 Players (' + data.players.length + ')</div>';
+  
+  if (data.players.length === 0) {
+    html += '<div class="empty-state">No players added yet</div>';
+  } else {
+    data.players.forEach(function(player, idx) {
+      var colors = getAvatarColors(idx);
+      var hasImage = player.image && player.image.length > 0;
+      var avatarStyle = hasImage ? 
+        'background-image:url(' + player.image + ')' : 
+        'background:linear-gradient(135deg,' + colors[0] + ',' + colors[1] + ')';
+      
+      html += '<div class="player-card">';
+      html += '<div class="player-header">';
+      
+      // Avatar with upload
+      html += '<div class="avatar' + (hasImage ? '' : ' no-image') + '" style="' + avatarStyle + '" onclick="document.getElementById(\'file-' + idx + '\').click()">';
+      if (!hasImage) html += player.name.charAt(0).toUpperCase();
+      html += '<div class="avatar-overlay"><span>📷</span></div>';
+      html += '</div>';
+      html += '<input type="file" id="file-' + idx + '" class="file-input" accept="image/*" onchange="uploadImage(' + idx + ', this)">';
+      
+      html += '<div class="player-info">';
+      html += '<div class="player-name">' + player.name + '</div>';
+      html += '<div class="player-score">' + calculateScore(player).toFixed(1) + ' points</div>';
+      html += '</div>';
+      
+      html += '<div class="player-actions">';
+      if (hasImage) {
+        html += '<button class="btn-secondary" style="padding:8px 12px;font-size:12px" onclick="removeImage(' + idx + ')">Remove Photo</button>';
+      }
+      html += '<button class="btn-danger" style="padding:8px 12px;font-size:12px" onclick="removePlayer(' + idx + ')">Remove</button>';
+      html += '</div>';
+      html += '</div>';
+      
+      // Teams input
+      html += '<div class="teams-input">';
+      html += '<label>Drafted Teams (comma separated)</label>';
+      html += '<input type="text" value="' + (player.teams || []).join(', ') + '" onchange="updateTeams(' + idx + ', this.value)" placeholder="Duke, Kentucky, Gonzaga...">';
+      html += '</div>';
+      
+      html += '</div>';
+    });
+  }
+  
+  html += '</div>';
+  return html;
+}
+
+function renderBracket() {
+  var html = '';
+  
+  REGIONS.forEach(function(region) {
+    html += '<div class="region-section">';
+    html += '<div class="region-title">🏀 ' + region + ' Region</div>';
+    
+    if (data.bracket[region]) {
+      data.bracket[region].forEach(function(team) {
+        var seedClass = team.seed <= 4 ? 't1' : team.seed <= 8 ? 't2' : team.seed <= 12 ? 't3' : 't4';
+        
+        html += '<div class="team-row">';
+        html += '<div class="seed-badge ' + seedClass + '">' + team.seed + '</div>';
+        html += '<input type="text" class="team-input" value="' + team.name + '" onchange="updateTeamName(\'' + region + '\',' + team.seed + ',this.value)">';
+        
+        html += '<div class="wins-control">';
+        html += '<button class="wins-btn" onclick="changeWins(\'' + region + '\',' + team.seed + ',-1)">−</button>';
+        html += '<span class="wins-count">' + team.wins + '</span>';
+        html += '<button class="wins-btn" onclick="changeWins(\'' + region + '\',' + team.seed + ',1)">+</button>';
+        html += '</div>';
+        
+        html += '<button class="status-btn ' + (team.eliminated ? 'out' : 'in') + '" onclick="toggleElim(\'' + region + '\',' + team.seed + ')">' + (team.eliminated ? 'OUT' : 'IN') + '</button>';
         html += '</div>';
       });
-      html += '</div>';
-      document.getElementById('bracket-tab').innerHTML = html;
     }
+    
+    html += '</div>';
+  });
+  
+  return html;
+}
 
-    function renderPlayers() {
-      var html = '<div class="card">';
-      html += '<input type="text" id="new-player" placeholder="Enter player name">';
-      html += '<button class="btn-primary" onclick="addPlayer()">Add Player</button>';
-      html += '</div>';
+function renderLeaderboard() {
+  var sorted = data.players.slice().sort(function(a,b) { return calculateScore(b) - calculateScore(a); });
+  
+  if (sorted.length === 0) {
+    return '<div class="card empty-state">No players added yet</div>';
+  }
+  
+  var html = '';
+  sorted.forEach(function(player, i) {
+    var colors = getAvatarColors(data.players.indexOf(player));
+    var hasImage = player.image && player.image.length > 0;
+    var avatarStyle = hasImage ? 
+      'background-image:url(' + player.image + ');background-size:cover;background-position:center' : 
+      'background:linear-gradient(135deg,' + colors[0] + ',' + colors[1] + ')';
+    
+    html += '<div class="leaderboard-card' + (i === 0 ? ' first' : '') + '">';
+    html += '<div class="rank">' + (i === 0 ? '👑' : (i + 1)) + '</div>';
+    html += '<div class="avatar' + (hasImage ? '' : ' no-image') + '" style="' + avatarStyle + '">' + (hasImage ? '' : player.name.charAt(0).toUpperCase()) + '</div>';
+    html += '<div style="flex:1">';
+    html += '<div class="player-name">' + player.name + '</div>';
+    html += '<div class="teams-list">' + (player.teams || []).join(', ') + '</div>';
+    html += '</div>';
+    html += '<div class="score">' + calculateScore(player).toFixed(1) + '</div>';
+    html += '</div>';
+  });
+  
+  return html;
+}
+
+function renderSettings() {
+  var rp = data.settings.roundPoints;
+  var sm = data.settings.seedMultipliers;
+  
+  var html = '<div class="settings-grid">';
+  
+  // Points per round
+  html += '<div class="card">';
+  html += '<div class="card-title">📊 Points Per Round</div>';
+  html += '<div class="setting-row"><span class="setting-label">Round 1 (64→32)</span><div class="setting-value"><input type="number" id="rp1" value="' + rp[1] + '" step="0.5" min="0" onchange="updateSettings()"> pts</div></div>';
+  html += '<div class="setting-row"><span class="setting-label">Round 2 (32→16)</span><div class="setting-value"><input type="number" id="rp2" value="' + rp[2] + '" step="0.5" min="0" onchange="updateSettings()"> pts</div></div>';
+  html += '<div class="setting-row"><span class="setting-label">Sweet 16 (16→8)</span><div class="setting-value"><input type="number" id="rp3" value="' + rp[3] + '" step="0.5" min="0" onchange="updateSettings()"> pts</div></div>';
+  html += '<div class="setting-row"><span class="setting-label">Elite 8 (8→4)</span><div class="setting-value"><input type="number" id="rp4" value="' + rp[4] + '" step="0.5" min="0" onchange="updateSettings()"> pts</div></div>';
+  html += '<div class="setting-row"><span class="setting-label">Final Four (4→2)</span><div class="setting-value"><input type="number" id="rp5" value="' + rp[5] + '" step="0.5" min="0" onchange="updateSettings()"> pts</div></div>';
+  html += '<div class="setting-row"><span class="setting-label">Championship</span><div class="setting-value"><input type="number" id="rp6" value="' + rp[6] + '" step="0.5" min="0" onchange="updateSettings()"> pts</div></div>';
+  html += '</div>';
+  
+  // Seed multipliers
+  html += '<div class="card">';
+  html += '<div class="card-title">🎯 Seed Multipliers</div>';
+  html += '<div class="setting-row" style="background:rgba(99,102,241,0.1)"><span class="setting-label" style="color:#818cf8">Seeds 1-4 (Top Seeds)</span><div class="setting-value"><input type="number" id="sm1" value="' + sm.tier1 + '" step="0.1" min="0" onchange="updateSettings()">x</div></div>';
+  html += '<div class="setting-row" style="background:rgba(34,197,94,0.1)"><span class="setting-label" style="color:#4ade80">Seeds 5-8</span><div class="setting-value"><input type="number" id="sm2" value="' + sm.tier2 + '" step="0.1" min="0" onchange="updateSettings()">x</div></div>';
+  html += '<div class="setting-row" style="background:rgba(251,191,36,0.1)"><span class="setting-label" style="color:#fbbf24">Seeds 9-12</span><div class="setting-value"><input type="number" id="sm3" value="' + sm.tier3 + '" step="0.1" min="0" onchange="updateSettings()">x</div></div>';
+  html += '<div class="setting-row" style="background:rgba(248,113,113,0.1)"><span class="setting-label" style="color:#f87171">Seeds 13-16 (Underdogs)</span><div class="setting-value"><input type="number" id="sm4" value="' + sm.tier4 + '" step="0.1" min="0" onchange="updateSettings()">x</div></div>';
+  html += '</div>';
+  
+  html += '</div>';
+  
+  return html;
+}
+
+// Actions
+function addPlayer() {
+  var input = document.getElementById('new-player-name');
+  var name = input.value.trim();
+  if (name && !data.players.find(function(p) { return p.name.toLowerCase() === name.toLowerCase(); })) {
+    data.players.push({ name: name, teams: [], image: '' });
+    saveData();
+    input.value = '';
+    render();
+  }
+}
+
+function removePlayer(idx) {
+  if (confirm('Remove ' + data.players[idx].name + '?')) {
+    data.players.splice(idx, 1);
+    saveData();
+    render();
+  }
+}
+
+function updateTeams(idx, value) {
+  data.players[idx].teams = value.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; });
+  saveData();
+}
+
+function uploadImage(idx, input) {
+  var file = input.files[0];
+  if (!file) return;
+  
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    // Resize image
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var size = 200;
+      canvas.width = size;
+      canvas.height = size;
+      var ctx = canvas.getContext('2d');
       
-      if (data.players.length === 0) {
-        html += '<div class="card"><p style="text-align:center;color:#a8a29e">No players yet</p></div>';
-      } else {
-        data.players.forEach(function(player, idx) {
-          html += '<div class="card">';
-          html += '<div class="player-row"><strong>' + player.name + '</strong><button class="btn-danger" onclick="removePlayer(' + idx + ')">Remove</button></div>';
-          html += '<input type="text" id="teams-' + idx + '" value="' + (player.teams || []).join(', ') + '" placeholder="Teams (comma separated)" onchange="updateTeams(' + idx + ',this.value)">';
-          html += '</div>';
-        });
-      }
-      document.getElementById('players-tab').innerHTML = html;
-    }
-
-    function renderLeaderboard() {
-      var sorted = data.players.slice().sort(function(a, b) { return calculateScore(b) - calculateScore(a); });
-      var html = '';
-      if (sorted.length === 0) {
-        html = '<div class="card"><p style="text-align:center;color:#a8a29e">No players yet</p></div>';
-      } else {
-        sorted.forEach(function(player, i) {
-          var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
-          html += '<div class="card" style="display:flex;align-items:center;gap:16px">';
-          html += '<div style="font-size:24px;width:40px;text-align:center">' + medal + '</div>';
-          html += '<div style="flex:1"><strong>' + player.name + '</strong><br><span style="font-size:13px;color:#a8a29e">' + (player.teams || []).join(', ') + '</span></div>';
-          html += '<div style="font-size:24px;font-weight:700;color:#BA7517">' + calculateScore(player).toFixed(1) + '</div>';
-          html += '</div>';
-        });
-      }
-      document.getElementById('leaderboard-tab').innerHTML = html;
-    }
-
-    function renderSettings() {
-      var rp = data.settings.roundPoints;
-      var sm = data.settings.seedMultipliers;
+      // Crop to square
+      var min = Math.min(img.width, img.height);
+      var sx = (img.width - min) / 2;
+      var sy = (img.height - min) / 2;
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
       
-      var html = '<div class="settings-grid">';
-      
-      // Points per round
-      html += '<div class="card">';
-      html += '<h2>📊 Points Per Round</h2>';
-      html += '<div class="setting-row"><span class="setting-label">Round 1 (64→32)</span><input type="number" id="rp1" value="' + rp[1] + '" step="0.5" min="0"></div>';
-      html += '<div class="setting-row"><span class="setting-label">Round 2 (32→16)</span><input type="number" id="rp2" value="' + rp[2] + '" step="0.5" min="0"></div>';
-      html += '<div class="setting-row"><span class="setting-label">Sweet 16 (16→8)</span><input type="number" id="rp3" value="' + rp[3] + '" step="0.5" min="0"></div>';
-      html += '<div class="setting-row"><span class="setting-label">Elite 8 (8→4)</span><input type="number" id="rp4" value="' + rp[4] + '" step="0.5" min="0"></div>';
-      html += '<div class="setting-row"><span class="setting-label">Final Four (4→2)</span><input type="number" id="rp5" value="' + rp[5] + '" step="0.5" min="0"></div>';
-      html += '<div class="setting-row"><span class="setting-label">Championship</span><input type="number" id="rp6" value="' + rp[6] + '" step="0.5" min="0"></div>';
-      html += '</div>';
-      
-      // Seed multipliers
-      html += '<div class="card">';
-      html += '<h2>🎯 Seed Multipliers</h2>';
-      html += '<div class="setting-row"><span class="setting-label">Seeds 1-4</span><input type="number" id="sm1" value="' + sm.tier1 + '" step="0.1" min="0">x</div>';
-      html += '<div class="setting-row"><span class="setting-label">Seeds 5-8</span><input type="number" id="sm2" value="' + sm.tier2 + '" step="0.1" min="0">x</div>';
-      html += '<div class="setting-row"><span class="setting-label">Seeds 9-12</span><input type="number" id="sm3" value="' + sm.tier3 + '" step="0.1" min="0">x</div>';
-      html += '<div class="setting-row"><span class="setting-label">Seeds 13-16</span><input type="number" id="sm4" value="' + sm.tier4 + '" step="0.1" min="0">x</div>';
-      html += '</div>';
-      
-      html += '</div>';
-      
-      html += '<div class="card" style="text-align:center">';
-      html += '<button class="btn-success" onclick="saveSettings()">💾 Save Settings</button>';
-      html += '<span id="saved-msg" class="saved-msg hidden">✓ Settings saved!</span>';
-      html += '</div>';
-      
-      document.getElementById('settings-tab').innerHTML = html;
-    }
-
-    function saveSettings() {
-      data.settings.roundPoints = {
-        1: parseFloat(document.getElementById('rp1').value) || 0,
-        2: parseFloat(document.getElementById('rp2').value) || 0,
-        3: parseFloat(document.getElementById('rp3').value) || 0,
-        4: parseFloat(document.getElementById('rp4').value) || 0,
-        5: parseFloat(document.getElementById('rp5').value) || 0,
-        6: parseFloat(document.getElementById('rp6').value) || 0
-      };
-      data.settings.seedMultipliers = {
-        tier1: parseFloat(document.getElementById('sm1').value) || 0,
-        tier2: parseFloat(document.getElementById('sm2').value) || 0,
-        tier3: parseFloat(document.getElementById('sm3').value) || 0,
-        tier4: parseFloat(document.getElementById('sm4').value) || 0
-      };
-      saveData(function() {
-        var msg = document.getElementById('saved-msg');
-        msg.classList.remove('hidden');
-        setTimeout(function() { msg.classList.add('hidden'); }, 2000);
-        renderLeaderboard();
-      });
-    }
-
-    function updateTeamName(region, seed, name) {
-      var team = data.bracket[region].find(function(t) { return t.seed === seed; });
-      if (team) { team.name = name; saveData(); }
-    }
-
-    function changeWins(region, seed, delta) {
-      var team = data.bracket[region].find(function(t) { return t.seed === seed; });
-      if (team) { 
-        team.wins = Math.max(0, Math.min(6, team.wins + delta)); 
-        saveData(); 
-        renderBracket();
-        renderLeaderboard();
-      }
-    }
-
-    function toggleElim(region, seed) {
-      var team = data.bracket[region].find(function(t) { return t.seed === seed; });
-      if (team) { team.eliminated = !team.eliminated; saveData(); renderBracket(); }
-    }
-
-    function addPlayer() {
-      var input = document.getElementById('new-player');
-      var name = input.value.trim();
-      if (name && !data.players.find(function(p) { return p.name === name; })) {
-        data.players.push({ name: name, teams: [] });
-        input.value = '';
-        saveData();
-        renderPlayers();
-      }
-    }
-
-    function removePlayer(idx) {
-      data.players.splice(idx, 1);
+      data.players[idx].image = canvas.toDataURL('image/jpeg', 0.8);
       saveData();
-      renderPlayers();
-      renderLeaderboard();
-    }
+      render();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
-    function updateTeams(idx, value) {
-      data.players[idx].teams = value.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; });
-      saveData();
-      renderLeaderboard();
-    }
+function removeImage(idx) {
+  data.players[idx].image = '';
+  saveData();
+  render();
+}
 
-    fetchData();
+function updateTeamName(region, seed, name) {
+  var team = data.bracket[region].find(function(t) { return t.seed === seed; });
+  if (team) { team.name = name; saveData(); }
+}
+
+function changeWins(region, seed, delta) {
+  var team = data.bracket[region].find(function(t) { return t.seed === seed; });
+  if (team) {
+    team.wins = Math.max(0, Math.min(6, team.wins + delta));
+    saveData();
+    render();
+  }
+}
+
+function toggleElim(region, seed) {
+  var team = data.bracket[region].find(function(t) { return t.seed === seed; });
+  if (team) { team.eliminated = !team.eliminated; saveData(); render(); }
+}
+
+function updateSettings() {
+  data.settings.roundPoints = {
+    1: parseFloat(document.getElementById('rp1').value) || 0,
+    2: parseFloat(document.getElementById('rp2').value) || 0,
+    3: parseFloat(document.getElementById('rp3').value) || 0,
+    4: parseFloat(document.getElementById('rp4').value) || 0,
+    5: parseFloat(document.getElementById('rp5').value) || 0,
+    6: parseFloat(document.getElementById('rp6').value) || 0
+  };
+  data.settings.seedMultipliers = {
+    tier1: parseFloat(document.getElementById('sm1').value) || 0,
+    tier2: parseFloat(document.getElementById('sm2').value) || 0,
+    tier3: parseFloat(document.getElementById('sm3').value) || 0,
+    tier4: parseFloat(document.getElementById('sm4').value) || 0
+  };
+  saveData();
+}
+
+// Init
+fetchData();
   </script>
 </body>
 </html>
