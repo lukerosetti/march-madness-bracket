@@ -50,4 +50,450 @@
     .matchup-team:last-child{border-bottom:none}
     .matchup-team.winner{background:rgba(0,212,170,0.1)}
     .matchup-team.loser{opacity:0.5}
-    .seed-badge{width:22px;h
+    .seed-badge{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;margin-right:8px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6)}
+    .seed-badge.top{background:linear-gradient(135deg,#ffd700,#ffb800);color:#0f0f13}
+    .seed-badge.good{background:rgba(0,212,170,0.2);color:#00d4aa}
+    .team-name{flex:1;font-size:13px;font-weight:500}
+    .team-name.winner{color:#00d4aa;font-weight:600}
+    .team-name.loser{text-decoration:line-through;color:rgba(255,255,255,0.4)}
+    .team-score{font-size:14px;font-weight:600}
+    .live-indicator{position:absolute;top:8px;right:8px;padding:2px 8px;background:rgba(245,158,11,0.2);border-radius:10px;font-size:9px;font-weight:600;color:#f59e0b}
+    .live-games{display:flex;gap:12px;overflow-x:auto;padding:4px 0}
+    .live-game-card{flex-shrink:0;width:170px;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px}
+    .live-game-card.active{background:rgba(0,212,170,0.08);border-color:rgba(0,212,170,0.2)}
+    .live-game-status{display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px}
+    .live-game-status span:first-child{color:rgba(255,255,255,0.5)}
+    .live-game-status span:last-child{color:#00d4aa;font-weight:600}
+    .live-game-team{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:4px}
+    .live-game-team.winner span:first-child{color:#00d4aa;font-weight:600}
+    .live-game-team.loser{opacity:0.5;text-decoration:line-through}
+    .scoring-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+    .scoring-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px}
+    .scoring-title{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .scoring-row{display:flex;justify-content:space-between;padding:12px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:8px}
+    .scoring-row span:first-child{color:rgba(255,255,255,0.6)}
+    .scoring-row span:last-child{font-weight:600}
+    .multiplier-row{display:flex;justify-content:space-between;padding:12px;border-radius:8px;margin-bottom:8px}
+    .multiplier-row.t1{background:rgba(99,102,241,0.15)}
+    .multiplier-row.t2{background:rgba(34,197,94,0.15)}
+    .multiplier-row.t3{background:rgba(245,158,11,0.15)}
+    .multiplier-row.t4{background:rgba(239,68,68,0.15)}
+    .refresh-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(0,212,170,0.1);border-radius:20px;font-size:12px;color:#00d4aa;margin-top:8px}
+    .empty-state{text-align:center;padding:40px;color:rgba(255,255,255,0.5)}
+    .hidden{display:none}
+    .final-four-card{background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,180,0,0.04));border:1px solid rgba(255,215,0,0.2);border-radius:16px;padding:20px;text-align:center}
+    .trophy-icon{font-size:32px;margin-bottom:8px}
+    .champion-label{font-size:12px;color:rgba(255,215,0,0.6);margin-bottom:4px}
+    .champion-name{font-size:18px;font-weight:700}
+    .your-teams{margin-top:20px;padding:16px 20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px}
+    .your-teams-title{font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);margin-bottom:12px}
+    .your-teams-list{display:flex;gap:10px;flex-wrap:wrap}
+    .your-team-chip{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600}
+    .your-team-chip.alive{background:rgba(0,212,170,0.12);border:1px solid rgba(0,212,170,0.25);color:#00d4aa}
+    .your-team-chip.dead{background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.2);color:rgba(255,100,100,0.9);text-decoration:line-through}
+    .your-team-chip .dot{width:8px;height:8px;border-radius:50%}
+    .your-team-chip.alive .dot{background:#00d4aa}
+    .your-team-chip.dead .dot{background:#ff6464}
+    .your-team-chip .wins{font-size:11px;opacity:0.7;font-weight:500}
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+var data = { players: [], bracket: {}, settings: { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3} } };
+var liveGames = [];
+var currentTab = 'standings';
+var currentRegion = 'East';
+var countdown = 60;
+var REGIONS = ['East', 'West', 'South', 'Midwest'];
+var MATCHUP_ORDER = [[1,16],[8,9],[5,12],[4,13],[6,11],[3,14],[7,10],[2,15]];
+
+function seedMultiplier(seed) {
+  var m = data.settings && data.settings.seedMultipliers || {tier1:1,tier2:1.5,tier3:2,tier4:3};
+  if (seed <= 4) return m.tier1;
+  if (seed <= 8) return m.tier2;
+  if (seed <= 12) return m.tier3;
+  return m.tier4;
+}
+
+function getRoundPoints(round) {
+  var rp = data.settings && data.settings.roundPoints || {1:1,2:2,3:8,4:16,5:32,6:32};
+  return rp[round] || 0;
+}
+
+function calculateScore(player) {
+  var total = 0;
+  if (!player.teams) return 0;
+  player.teams.forEach(function(tn) {
+    REGIONS.forEach(function(region) {
+      if (!data.bracket[region]) return;
+      var team = data.bracket[region].find(function(t) { return t.name.toLowerCase() === tn.toLowerCase(); });
+      if (team) {
+        for (var i = 1; i <= team.wins; i++) {
+          total += getRoundPoints(i) * seedMultiplier(team.seed);
+        }
+      }
+    });
+  });
+  return Math.round(total * 10) / 10;
+}
+
+function getTeamBySeed(region, seed) {
+  if (!data.bracket[region]) return null;
+  return data.bracket[region].find(function(t) { return t.seed === seed; });
+}
+
+function getAdvancingTeam(region, idx, round) {
+  if (!data.bracket[region]) return null;
+  if (round === 1) {
+    var seeds = MATCHUP_ORDER[idx];
+    var t1 = getTeamBySeed(region, seeds[0]);
+    var t2 = getTeamBySeed(region, seeds[1]);
+    if (t1 && t1.wins >= 1) return t1;
+    if (t2 && t2.wins >= 1) return t2;
+    return null;
+  }
+  var a = getAdvancingTeam(region, idx * 2, round - 1);
+  var b = getAdvancingTeam(region, idx * 2 + 1, round - 1);
+  if (a && a.wins >= round) return a;
+  if (b && b.wins >= round) return b;
+  return null;
+}
+
+function getRegionWinner(region) { return getAdvancingTeam(region, 0, 4); }
+
+function getAvatarColors(index) {
+  var colors = [
+    ['#6366f1','#8b5cf6'],['#ec4899','#f43f5e'],['#3b82f6','#2563eb'],
+    ['#f59e0b','#d97706'],['#10b981','#059669'],['#8b5cf6','#7c3aed']
+  ];
+  return colors[index % colors.length];
+}
+
+function fetchData() {
+  fetch('/api/data').then(function(r){return r.json();}).then(function(d) {
+    data = d;
+    if (!data.settings) {
+      data.settings = { roundPoints: {1:1,2:2,3:8,4:16,5:32,6:32}, seedMultipliers: {tier1:1,tier2:1.5,tier3:2,tier4:3} };
+    }
+    render();
+    countdown = 60;
+  });
+}
+
+function fetchLiveGames() {
+  fetch('/api/live-scores').then(function(r){return r.json();}).then(function(d) {
+    liveGames = d.games || [];
+    render();
+  });
+}
+
+function showTab(tab) {
+  currentTab = tab;
+  render();
+}
+
+function showRegion(region) {
+  currentRegion = region;
+  render();
+}
+
+function render() {
+  var html = '';
+  
+  // Header
+  html += '<div class="header">';
+  html += '<div class="logo"><div class="logo-icon">🏀</div><div><div class="logo-text">Office Madness</div><div class="logo-sub">2026 Tournament</div></div></div>';
+  var activeLive = liveGames.filter(function(g){return !g.completed && g.status !== 'Scheduled';}).length;
+  if (activeLive > 0) {
+    html += '<div class="live-badge">🔴 ' + activeLive + ' LIVE</div>';
+  }
+  html += '</div>';
+  
+  // Tabs
+  html += '<div class="tabs">';
+  html += '<button class="tab' + (currentTab === 'standings' ? ' active' : '') + '" onclick="showTab(\'standings\')">🏆 Standings</button>';
+  html += '<button class="tab' + (currentTab === 'bracket' ? ' active' : '') + '" onclick="showTab(\'bracket\')">📊 Bracket</button>';
+  html += '<button class="tab' + (currentTab === 'live' ? ' active' : '') + '" onclick="showTab(\'live\')">📺 Live</button>';
+  html += '<button class="tab' + (currentTab === 'scoring' ? ' active' : '') + '" onclick="showTab(\'scoring\')">📈 Scoring</button>';
+  html += '</div>';
+  
+  if (currentTab === 'standings') {
+    html += renderStandings();
+  } else if (currentTab === 'bracket') {
+    html += renderBracket();
+  } else if (currentTab === 'live') {
+    html += renderLive();
+  } else if (currentTab === 'scoring') {
+    html += renderScoring();
+  }
+  
+  // Refresh badge
+  html += '<div style="text-align:center;margin-top:20px"><div class="refresh-badge">🔄 Auto-refresh in ' + countdown + 's</div></div>';
+  
+  document.getElementById('app').innerHTML = html;
+}
+
+function renderStandings() {
+  var sorted = data.players.slice().sort(function(a,b){return calculateScore(b) - calculateScore(a);});
+  if (sorted.length === 0) {
+    return '<div class="card empty-state">Waiting for commissioner to add players...</div>';
+  }
+  var html = '';
+  sorted.forEach(function(player, i) {
+    var colors = getAvatarColors(i);
+    var hasImage = player.image && player.image.length > 0;
+    var avatarStyle = hasImage ? 
+      'background-image:url(' + player.image + ');background-size:cover;background-position:center;' : 
+      'background:linear-gradient(135deg,' + colors[0] + ',' + colors[1] + ')';
+    
+    html += '<div class="player-card' + (i === 0 ? ' first' : '') + '">';
+    html += '<div class="rank">' + (i === 0 ? '👑' : i === 1 ? '2' : i === 2 ? '3' : (i + 1)) + '</div>';
+    html += '<div class="avatar' + (hasImage ? '' : ' no-image') + '" style="' + avatarStyle + '">' + (hasImage ? '' : player.name.charAt(0).toUpperCase()) + '</div>';
+    html += '<div class="player-info"><div class="player-name">' + player.name + '</div><div class="player-teams">';
+    
+    if (player.teams && player.teams.length > 0) {
+      var shown = player.teams.slice(0, 3);
+      shown.forEach(function(t) {
+        var isElim = isTeamEliminated(t);
+        html += '<span class="team-chip' + (isElim ? ' eliminated' : '') + '">' + t + '</span>';
+      });
+      if (player.teams.length > 3) {
+        html += '<span class="team-chip">+' + (player.teams.length - 3) + ' more</span>';
+      }
+    }
+    html += '</div></div>';
+    html += '<div class="score"><div class="score-value">' + calculateScore(player).toFixed(1) + '</div></div>';
+    html += '</div>';
+  });
+  return html;
+}
+
+function isTeamEliminated(teamName) {
+  for (var r = 0; r < REGIONS.length; r++) {
+    var region = REGIONS[r];
+    if (!data.bracket[region]) continue;
+    var team = data.bracket[region].find(function(t) { return t.name.toLowerCase() === teamName.toLowerCase(); });
+    if (team) return team.eliminated;
+  }
+  return false;
+}
+
+function getTeamWins(teamName) {
+  for (var r = 0; r < REGIONS.length; r++) {
+    var region = REGIONS[r];
+    if (!data.bracket[region]) continue;
+    var team = data.bracket[region].find(function(t) { return t.name.toLowerCase() === teamName.toLowerCase(); });
+    if (team) return team.wins;
+  }
+  return 0;
+}
+
+function renderBracket() {
+  var html = '';
+  
+  // Region pills
+  html += '<div class="region-pills">';
+  REGIONS.forEach(function(region) {
+    html += '<div class="region-pill' + (currentRegion === region ? ' active' : '') + '" onclick="showRegion(\'' + region + '\')">' + region + '</div>';
+  });
+  html += '<div class="region-pill final" onclick="showRegion(\'Final\')">🏆 Final Four</div>';
+  html += '</div>';
+  
+  if (currentRegion === 'Final') {
+    html += renderFinalFour();
+  } else {
+    html += renderRegionBracket(currentRegion);
+  }
+  
+  return html;
+}
+
+function renderRegionBracket(region) {
+  if (!data.bracket[region]) return '<div class="card empty-state">No bracket data</div>';
+  
+  var html = '<div class="bracket-container">';
+  
+  // Round of 64
+  html += '<div class="round" style="padding-top:0">';
+  html += '<div class="round-title">Round of 64</div>';
+  for (var i = 0; i < 8; i++) {
+    var seeds = MATCHUP_ORDER[i];
+    var t1 = getTeamBySeed(region, seeds[0]);
+    var t2 = getTeamBySeed(region, seeds[1]);
+    html += renderMatchup(t1, t2);
+  }
+  html += '</div>';
+  
+  // Round of 32
+  html += '<div class="round" style="padding-top:40px">';
+  html += '<div class="round-title">Round of 32</div>';
+  for (var i = 0; i < 4; i++) {
+    var w1 = getAdvancingTeam(region, i * 2, 1);
+    var w2 = getAdvancingTeam(region, i * 2 + 1, 1);
+    html += renderMatchup(w1, w2, true, 2);
+  }
+  html += '</div>';
+  
+  // Sweet 16
+  html += '<div class="round" style="padding-top:100px">';
+  html += '<div class="round-title">Sweet 16</div>';
+  for (var i = 0; i < 2; i++) {
+    var w1 = getAdvancingTeam(region, i * 2, 2);
+    var w2 = getAdvancingTeam(region, i * 2 + 1, 2);
+    html += renderMatchup(w1, w2, true, 3);
+  }
+  html += '</div>';
+  
+  // Elite 8
+  html += '<div class="round" style="padding-top:160px">';
+  html += '<div class="round-title">Elite 8</div>';
+  var e1 = getAdvancingTeam(region, 0, 3);
+  var e2 = getAdvancingTeam(region, 1, 3);
+  html += renderMatchup(e1, e2, true, 4);
+  html += '</div>';
+  
+  // Region Winner
+  html += '<div class="round" style="padding-top:180px">';
+  html += '<div class="round-title">Champion</div>';
+  var winner = getRegionWinner(region);
+  html += '<div class="final-four-card">';
+  html += '<div class="trophy-icon">🏆</div>';
+  html += '<div class="champion-label">' + region + ' Champion</div>';
+  html += '<div class="champion-name">' + (winner ? winner.name : 'TBD') + '</div>';
+  html += '</div>';
+  html += '</div>';
+  
+  html += '</div>';
+  return html;
+}
+
+function renderMatchup(t1, t2, isFuture, minWins) {
+  if (!t1 && !t2) {
+    return '<div class="matchup" style="border-style:dashed;opacity:0.5"><div class="matchup-team"><div class="seed-badge">?</div><span class="team-name" style="color:rgba(255,255,255,0.4)">TBD</span></div><div class="matchup-team"><div class="seed-badge">?</div><span class="team-name" style="color:rgba(255,255,255,0.4)">TBD</span></div></div>';
+  }
+  
+  var html = '<div class="matchup">';
+  
+  if (t1) {
+    var isWinner1 = minWins ? t1.wins >= minWins : t1.wins >= 1;
+    var isLoser1 = t1.eliminated && !isWinner1;
+    html += '<div class="matchup-team' + (isWinner1 ? ' winner' : '') + (isLoser1 ? ' loser' : '') + '">';
+    html += '<div class="seed-badge' + (t1.seed <= 1 ? ' top' : t1.seed <= 4 ? ' good' : '') + '">' + t1.seed + '</div>';
+    html += '<span class="team-name' + (isWinner1 ? ' winner' : '') + (isLoser1 ? ' loser' : '') + '">' + t1.name + '</span>';
+    html += '</div>';
+  } else {
+    html += '<div class="matchup-team"><div class="seed-badge">?</div><span class="team-name" style="color:rgba(255,255,255,0.4)">TBD</span></div>';
+  }
+  
+  if (t2) {
+    var isWinner2 = minWins ? t2.wins >= minWins : t2.wins >= 1;
+    var isLoser2 = t2.eliminated && !isWinner2;
+    html += '<div class="matchup-team' + (isWinner2 ? ' winner' : '') + (isLoser2 ? ' loser' : '') + '">';
+    html += '<div class="seed-badge' + (t2.seed <= 1 ? ' top' : t2.seed <= 4 ? ' good' : '') + '">' + t2.seed + '</div>';
+    html += '<span class="team-name' + (isWinner2 ? ' winner' : '') + (isLoser2 ? ' loser' : '') + '">' + t2.name + '</span>';
+    html += '</div>';
+  } else {
+    html += '<div class="matchup-team"><div class="seed-badge">?</div><span class="team-name" style="color:rgba(255,255,255,0.4)">TBD</span></div>';
+  }
+  
+  html += '</div>';
+  return html;
+}
+
+function renderFinalFour() {
+  var eastW = getRegionWinner('East');
+  var westW = getRegionWinner('West');
+  var southW = getRegionWinner('South');
+  var midwestW = getRegionWinner('Midwest');
+  
+  var html = '<div style="text-align:center">';
+  html += '<div class="final-four-card" style="max-width:400px;margin:0 auto">';
+  html += '<div class="trophy-icon">🏆</div>';
+  html += '<div class="champion-label">Final Four</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;text-align:left">';
+  
+  html += '<div class="card" style="margin:0"><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px">East</div><div style="font-weight:600">' + (eastW ? eastW.name : 'TBD') + '</div></div>';
+  html += '<div class="card" style="margin:0"><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px">West</div><div style="font-weight:600">' + (westW ? westW.name : 'TBD') + '</div></div>';
+  html += '<div class="card" style="margin:0"><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px">South</div><div style="font-weight:600">' + (southW ? southW.name : 'TBD') + '</div></div>';
+  html += '<div class="card" style="margin:0"><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px">Midwest</div><div style="font-weight:600">' + (midwestW ? midwestW.name : 'TBD') + '</div></div>';
+  
+  html += '</div></div></div>';
+  return html;
+}
+
+function renderLive() {
+  var active = liveGames.filter(function(g) { return !g.completed && g.status !== 'Scheduled'; });
+  var completed = liveGames.filter(function(g) { return g.completed; });
+  var upcoming = liveGames.filter(function(g) { return g.status === 'Scheduled'; });
+  
+  var html = '';
+  
+  if (active.length > 0) {
+    html += '<div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:16px">🔴 Live Now</div>';
+    html += '<div class="live-games">';
+    active.forEach(function(game) {
+      html += '<div class="live-game-card active">';
+      html += '<div class="live-game-status"><span>' + game.status + '</span><span>' + (game.clock || '') + '</span></div>';
+      html += '<div class="live-game-team"><span>' + (game.away.seed ? '(' + game.away.seed + ') ' : '') + game.away.shortName + '</span><span style="font-weight:700">' + game.away.score + '</span></div>';
+      html += '<div class="live-game-team"><span>' + (game.home.seed ? '(' + game.home.seed + ') ' : '') + game.home.shortName + '</span><span style="font-weight:700">' + game.home.score + '</span></div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  } else {
+    html += '<div class="card empty-state">No games currently in progress</div>';
+  }
+  
+  if (completed.length > 0) {
+    html += '<div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:16px">✓ Completed</div>';
+    html += '<div class="live-games">';
+    completed.slice(0, 8).forEach(function(game) {
+      html += '<div class="live-game-card">';
+      html += '<div class="live-game-status"><span>Final</span><span>✓</span></div>';
+      html += '<div class="live-game-team' + (game.away.winner ? ' winner' : ' loser') + '"><span>' + game.away.shortName + '</span><span style="font-weight:700">' + game.away.score + '</span></div>';
+      html += '<div class="live-game-team' + (game.home.winner ? ' winner' : ' loser') + '"><span>' + game.home.shortName + '</span><span style="font-weight:700">' + game.home.score + '</span></div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  }
+  
+  return html;
+}
+
+function renderScoring() {
+  var rp = data.settings.roundPoints;
+  var sm = data.settings.seedMultipliers;
+  
+  var html = '<div class="scoring-grid">';
+  
+  html += '<div class="scoring-card">';
+  html += '<div class="scoring-title">📊 Points Per Round</div>';
+  html += '<div class="scoring-row"><span>Round 1 (64→32)</span><span>' + rp[1] + ' pts</span></div>';
+  html += '<div class="scoring-row"><span>Round 2 (32→16)</span><span>' + rp[2] + ' pts</span></div>';
+  html += '<div class="scoring-row"><span>Sweet 16</span><span>' + rp[3] + ' pts</span></div>';
+  html += '<div class="scoring-row"><span>Elite 8</span><span>' + rp[4] + ' pts</span></div>';
+  html += '<div class="scoring-row"><span>Final Four</span><span>' + rp[5] + ' pts</span></div>';
+  html += '<div class="scoring-row"><span>Championship</span><span>' + rp[6] + ' pts</span></div>';
+  html += '</div>';
+  
+  html += '<div class="scoring-card">';
+  html += '<div class="scoring-title">🎯 Seed Multipliers</div>';
+  html += '<div class="multiplier-row t1"><span style="color:#818cf8">Seeds 1-4</span><span style="color:#818cf8;font-weight:700">' + sm.tier1 + 'x</span></div>';
+  html += '<div class="multiplier-row t2"><span style="color:#4ade80">Seeds 5-8</span><span style="color:#4ade80;font-weight:700">' + sm.tier2 + 'x</span></div>';
+  html += '<div class="multiplier-row t3"><span style="color:#fbbf24">Seeds 9-12</span><span style="color:#fbbf24;font-weight:700">' + sm.tier3 + 'x</span></div>';
+  html += '<div class="multiplier-row t4"><span style="color:#f87171">Seeds 13-16</span><span style="color:#f87171;font-weight:700">' + sm.tier4 + 'x</span></div>';
+  html += '</div>';
+  
+  html += '</div>';
+  return html;
+}
+
+// Init
+fetchData();
+fetchLiveGames();
+setInterval(fetchData, 60000);
+setInterval(fetchLiveGames, 30000);
+setInterval(function() { countdown--; if (countdown <= 0) countdown = 60; render(); }, 1000);
+  </script>
+</body>
+</html>
