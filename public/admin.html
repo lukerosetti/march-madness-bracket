@@ -9,14 +9,18 @@
     body{font-family:system-ui,sans-serif;background:#1c1917;color:#fafaf9;padding:20px}
     #app{max-width:1000px;margin:0 auto}
     h1{font-size:24px;margin-bottom:20px;text-align:center}
+    h2{font-size:18px;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #BA7517}
     .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;justify-content:center}
     .tab{padding:10px 20px;border:1px solid #444;border-radius:8px;background:#292524;cursor:pointer;color:#fafaf9}
     .tab.active{background:#BA7517;border-color:#BA7517}
     .card{background:#292524;border:1px solid #444;border-radius:12px;padding:20px;margin-bottom:16px}
-    input[type=text]{width:100%;padding:10px;border:1px solid #444;border-radius:8px;background:#1c1917;color:#fafaf9;margin-bottom:10px}
+    input[type=text],input[type=number]{padding:10px;border:1px solid #444;border-radius:8px;background:#1c1917;color:#fafaf9}
+    input[type=text]{width:100%;margin-bottom:10px}
+    input[type=number]{width:80px;text-align:center}
     button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px}
     .btn-primary{background:#BA7517;color:#fff}
     .btn-danger{background:#991b1b;color:#fff;padding:6px 12px;font-size:12px}
+    .btn-success{background:#166534;color:#fff}
     .player-row{display:flex;justify-content:space-between;align-items:center;padding:12px;background:#1c1917;border-radius:8px;margin-bottom:8px}
     .team-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
     .seed{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#E6F1FB;color:#0C447C}
@@ -25,31 +29,51 @@
     .region{margin-bottom:24px}
     .region-title{font-size:18px;font-weight:600;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #BA7517}
     .hidden{display:none}
+    .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .setting-row{display:flex;justify-content:space-between;align-items:center;padding:12px;background:#1c1917;border-radius:8px;margin-bottom:8px}
+    .setting-label{font-size:14px}
+    .saved-msg{color:#86efac;font-size:14px;margin-left:12px}
+    @media(max-width:600px){.settings-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div id="app">
     <h1>🔧 Commissioner Panel</h1>
     <div class="tabs">
-      <button class="tab active" onclick="showTab('bracket')">📝 Edit Bracket</button>
+      <button class="tab active" onclick="showTab('bracket')">📝 Bracket</button>
       <button class="tab" onclick="showTab('players')">👥 Players</button>
-      <button class="tab" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
+      <button class="tab" onclick="showTab('leaderboard')">🏆 Scores</button>
+      <button class="tab" onclick="showTab('settings')">⚙️ Settings</button>
     </div>
     <div id="bracket-tab"></div>
     <div id="players-tab" class="hidden"></div>
     <div id="leaderboard-tab" class="hidden"></div>
+    <div id="settings-tab" class="hidden"></div>
   </div>
 
   <script>
-    var data = { players: [], bracket: {}, lastUpdate: null };
+    var data = { 
+      players: [], 
+      bracket: {}, 
+      lastUpdate: null,
+      settings: {
+        roundPoints: { 1: 1, 2: 2, 3: 8, 4: 16, 5: 32, 6: 32 },
+        seedMultipliers: { tier1: 1, tier2: 1.5, tier3: 2, tier4: 3 }
+      }
+    };
     var REGIONS = ['East', 'West', 'South', 'Midwest'];
-    var ROUND_POINTS = {1:1, 2:2, 3:8, 4:16, 5:32, 6:32};
 
     function seedMultiplier(seed) {
-      if (seed <= 4) return 1;
-      if (seed <= 8) return 1.5;
-      if (seed <= 12) return 2;
-      return 3;
+      var m = data.settings && data.settings.seedMultipliers || { tier1: 1, tier2: 1.5, tier3: 2, tier4: 3 };
+      if (seed <= 4) return m.tier1;
+      if (seed <= 8) return m.tier2;
+      if (seed <= 12) return m.tier3;
+      return m.tier4;
+    }
+
+    function getRoundPoints(round) {
+      var rp = data.settings && data.settings.roundPoints || { 1: 1, 2: 2, 3: 8, 4: 16, 5: 32, 6: 32 };
+      return rp[round] || 0;
     }
 
     function calculateScore(player) {
@@ -61,7 +85,7 @@
           var team = data.bracket[region].find(function(t) { return t.name.toLowerCase() === tn.toLowerCase(); });
           if (team) {
             for (var i = 1; i <= team.wins; i++) {
-              total += (ROUND_POINTS[i] || 0) * seedMultiplier(team.seed);
+              total += getRoundPoints(i) * seedMultiplier(team.seed);
             }
           }
         });
@@ -74,27 +98,42 @@
         .then(function(r) { return r.json(); })
         .then(function(d) {
           data = d;
+          if (!data.settings) {
+            data.settings = {
+              roundPoints: { 1: 1, 2: 2, 3: 8, 4: 16, 5: 32, 6: 32 },
+              seedMultipliers: { tier1: 1, tier2: 1.5, tier3: 2, tier4: 3 }
+            };
+          }
           renderBracket();
           renderPlayers();
           renderLeaderboard();
+          renderSettings();
         });
     }
 
-    function saveData() {
+    function saveData(callback) {
       fetch('/api/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
+      }).then(function() {
+        if (callback) callback();
       });
     }
 
     function showTab(tab) {
       document.querySelectorAll('.tab').forEach(function(t, i) {
-        t.classList.toggle('active', (tab === 'bracket' && i === 0) || (tab === 'players' && i === 1) || (tab === 'leaderboard' && i === 2));
+        t.classList.toggle('active', 
+          (tab === 'bracket' && i === 0) || 
+          (tab === 'players' && i === 1) || 
+          (tab === 'leaderboard' && i === 2) ||
+          (tab === 'settings' && i === 3)
+        );
       });
       document.getElementById('bracket-tab').classList.toggle('hidden', tab !== 'bracket');
       document.getElementById('players-tab').classList.toggle('hidden', tab !== 'players');
       document.getElementById('leaderboard-tab').classList.toggle('hidden', tab !== 'leaderboard');
+      document.getElementById('settings-tab').classList.toggle('hidden', tab !== 'settings');
     }
 
     function renderBracket() {
@@ -155,6 +194,65 @@
         });
       }
       document.getElementById('leaderboard-tab').innerHTML = html;
+    }
+
+    function renderSettings() {
+      var rp = data.settings.roundPoints;
+      var sm = data.settings.seedMultipliers;
+      
+      var html = '<div class="settings-grid">';
+      
+      // Points per round
+      html += '<div class="card">';
+      html += '<h2>📊 Points Per Round</h2>';
+      html += '<div class="setting-row"><span class="setting-label">Round 1 (64→32)</span><input type="number" id="rp1" value="' + rp[1] + '" step="0.5" min="0"></div>';
+      html += '<div class="setting-row"><span class="setting-label">Round 2 (32→16)</span><input type="number" id="rp2" value="' + rp[2] + '" step="0.5" min="0"></div>';
+      html += '<div class="setting-row"><span class="setting-label">Sweet 16 (16→8)</span><input type="number" id="rp3" value="' + rp[3] + '" step="0.5" min="0"></div>';
+      html += '<div class="setting-row"><span class="setting-label">Elite 8 (8→4)</span><input type="number" id="rp4" value="' + rp[4] + '" step="0.5" min="0"></div>';
+      html += '<div class="setting-row"><span class="setting-label">Final Four (4→2)</span><input type="number" id="rp5" value="' + rp[5] + '" step="0.5" min="0"></div>';
+      html += '<div class="setting-row"><span class="setting-label">Championship</span><input type="number" id="rp6" value="' + rp[6] + '" step="0.5" min="0"></div>';
+      html += '</div>';
+      
+      // Seed multipliers
+      html += '<div class="card">';
+      html += '<h2>🎯 Seed Multipliers</h2>';
+      html += '<div class="setting-row"><span class="setting-label">Seeds 1-4</span><input type="number" id="sm1" value="' + sm.tier1 + '" step="0.1" min="0">x</div>';
+      html += '<div class="setting-row"><span class="setting-label">Seeds 5-8</span><input type="number" id="sm2" value="' + sm.tier2 + '" step="0.1" min="0">x</div>';
+      html += '<div class="setting-row"><span class="setting-label">Seeds 9-12</span><input type="number" id="sm3" value="' + sm.tier3 + '" step="0.1" min="0">x</div>';
+      html += '<div class="setting-row"><span class="setting-label">Seeds 13-16</span><input type="number" id="sm4" value="' + sm.tier4 + '" step="0.1" min="0">x</div>';
+      html += '</div>';
+      
+      html += '</div>';
+      
+      html += '<div class="card" style="text-align:center">';
+      html += '<button class="btn-success" onclick="saveSettings()">💾 Save Settings</button>';
+      html += '<span id="saved-msg" class="saved-msg hidden">✓ Settings saved!</span>';
+      html += '</div>';
+      
+      document.getElementById('settings-tab').innerHTML = html;
+    }
+
+    function saveSettings() {
+      data.settings.roundPoints = {
+        1: parseFloat(document.getElementById('rp1').value) || 0,
+        2: parseFloat(document.getElementById('rp2').value) || 0,
+        3: parseFloat(document.getElementById('rp3').value) || 0,
+        4: parseFloat(document.getElementById('rp4').value) || 0,
+        5: parseFloat(document.getElementById('rp5').value) || 0,
+        6: parseFloat(document.getElementById('rp6').value) || 0
+      };
+      data.settings.seedMultipliers = {
+        tier1: parseFloat(document.getElementById('sm1').value) || 0,
+        tier2: parseFloat(document.getElementById('sm2').value) || 0,
+        tier3: parseFloat(document.getElementById('sm3').value) || 0,
+        tier4: parseFloat(document.getElementById('sm4').value) || 0
+      };
+      saveData(function() {
+        var msg = document.getElementById('saved-msg');
+        msg.classList.remove('hidden');
+        setTimeout(function() { msg.classList.add('hidden'); }, 2000);
+        renderLeaderboard();
+      });
     }
 
     function updateTeamName(region, seed, name) {
