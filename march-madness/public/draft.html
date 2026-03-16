@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Draft | Jack Hughes Jersey Bet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(180deg, #0d1b2a 0%, #0a1628 100%); color: #fff; min-height: 100vh; padding: 20px; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; }
+    .status { background: rgba(0,212,170,0.15); border: 2px solid #00d4aa; border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 24px; }
+    .status.inactive { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); }
+    .pick-number { font-family: 'Bebas Neue', sans-serif; font-size: 64px; color: #ffd700; line-height: 1; }
+    .current-picker { font-size: 20px; margin-top: 8px; }
+    .avatar { display: inline-flex; width: 32px; height: 32px; border-radius: 8px; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; vertical-align: middle; margin-right: 8px; }
+    .draft-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 768px) { .draft-board { grid-template-columns: repeat(2, 1fr); } }
+    .player-column { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; }
+    .player-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .player-name { font-weight: 600; }
+    .player-count { font-size: 12px; color: rgba(255,255,255,0.5); }
+    .team-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+    .team-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 13px; }
+    .seed { width: 24px; height: 24px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .seed-1-4 { background: linear-gradient(135deg, #ffd700, #ffb800); color: #000; }
+    .seed-5-8 { background: rgba(0,212,170,0.3); color: #00d4aa; }
+    .seed-9-12 { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
+    .seed-13-16 { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
+    .recent-picks { margin-top: 24px; }
+    .recent-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; margin-bottom: 12px; color: #ffd700; }
+    .picks-list { display: flex; flex-direction: column; gap: 8px; }
+    .pick-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+    .pick-num { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #ffd700; width: 50px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🏀 LIVE DRAFT</h1>
+    <p style="color: rgba(255,255,255,0.6);">Jack Hughes Jersey Bet 2026</p>
+  </div>
+  <div class="status" id="status"><div class="pick-number">--</div><div>Waiting for draft to start...</div></div>
+  <div class="draft-board" id="draftBoard"></div>
+  <div class="recent-picks"><div class="recent-title">Recent Picks</div><div class="picks-list" id="picksList"></div></div>
+  <script>
+    let appData = null, teamsData = null;
+    async function loadData() {
+      const [dataRes, teamsRes] = await Promise.all([fetch('/api/data'), fetch('/api/teams')]);
+      appData = await dataRes.json(); teamsData = await teamsRes.json();
+      render();
+    }
+    function render() {
+      const state = appData.draftState;
+      const statusEl = document.getElementById('status');
+      if (state.active) {
+        const pickNum = state.currentPick, round = Math.floor(pickNum / 4), pos = pickNum % 4;
+        const isReverse = round % 2 === 1, pickerIdx = isReverse ? (3 - pos) : pos;
+        const picker = appData.players[state.order[pickerIdx]];
+        statusEl.className = 'status';
+        statusEl.innerHTML = '<div class="pick-number">Pick #' + (pickNum + 1) + '</div><div class="current-picker"><span class="avatar" style="background:linear-gradient(135deg,' + picker.colorPrimary + ',' + picker.colorSecondary + ')">' + picker.letter + '</span>' + picker.name + "'s Turn</div>";
+      } else {
+        statusEl.className = 'status inactive';
+        statusEl.innerHTML = '<div class="pick-number">--</div><div>' + (state.picks?.length > 0 ? 'Draft Complete! ' + state.picks.length + ' picks made' : 'Waiting for draft to start...') + '</div>';
+      }
+      document.getElementById('draftBoard').innerHTML = appData.players.map(p => {
+        const teams = p.teams.map(t => { const info = teamsData[t]; if (!info) return ''; const sc = info.seed <= 4 ? 'seed-1-4' : info.seed <= 8 ? 'seed-5-8' : info.seed <= 12 ? 'seed-9-12' : 'seed-13-16'; return '<div class="team-item"><span class="seed ' + sc + '">' + info.seed + '</span>' + t + '</div>'; }).join('');
+        return '<div class="player-column"><div class="player-header"><span class="avatar" style="background:linear-gradient(135deg,' + p.colorPrimary + ',' + p.colorSecondary + ')">' + p.letter + '</span><div><div class="player-name">' + p.name + '</div><div class="player-count">' + p.teams.length + ' teams</div></div></div><div class="team-list">' + (teams || '<div style="color:rgba(255,255,255,0.4);font-size:12px">No picks yet</div>') + '</div></div>';
+      }).join('');
+      const recent = (state.picks || []).slice(-5).reverse();
+      document.getElementById('picksList').innerHTML = recent.map(pick => {
+        const player = appData.players[pick.player]; const info = teamsData[pick.team] || {};
+        return '<div class="pick-item"><div class="pick-num">#' + pick.pick + '</div><span class="avatar" style="background:linear-gradient(135deg,' + player.colorPrimary + ',' + player.colorSecondary + ')">' + player.letter + '</span><span>' + player.name + ' selected <strong>' + pick.team + '</strong></span></div>';
+      }).join('') || '<div style="color:rgba(255,255,255,0.4)">No picks yet</div>';
+    }
+    loadData(); setInterval(loadData, 3000);
+  </script>
+</body>
+</html>
